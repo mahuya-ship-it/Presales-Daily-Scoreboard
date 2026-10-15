@@ -1,0 +1,1 @@
+{"title":"Fresh enquiries per owner and hour","description":"Inbound and Outbound leads of the period counted per owner and creation hour (IST and UTC hour, to place 6:30 PM exactly). Reads Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_fresh_all}}"}}}

@@ -1,0 +1,1 @@
+{"title":"Fresh enquiries not called","description":"Fresh leads of the period with no first call, per owner and creation hour. Reads Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_fresh_nc}}"}}}

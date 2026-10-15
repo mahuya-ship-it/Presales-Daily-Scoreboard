@@ -1,0 +1,1 @@
+{"title":"Report day and period","description":"The To date’s task count, with the period’s From and To dates. Reads Task.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_day}}"}}}

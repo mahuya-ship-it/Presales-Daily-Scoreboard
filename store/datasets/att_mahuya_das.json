@@ -1,0 +1,1 @@
+{"title":"Mahuya Das - past attempts","description":"Calls Mahuya Das logged before the report day per follow-up lead, for the under-5-attempts rule. Reads Task.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_att_mahuya_das}}"}}}

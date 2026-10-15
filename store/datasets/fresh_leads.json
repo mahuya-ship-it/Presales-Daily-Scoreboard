@@ -1,0 +1,1 @@
+{"title":"Fresh enquiries, lead by lead","description":"Inbound and Outbound leads of the period (each day 6:30 PM to 6:30 PM) with first-call time, for overnight leads called by 12 noon; only loaded for periods of up to 14 days. Reads Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_fresh}}"}}}

@@ -1,0 +1,1 @@
+{"title":"Fresh enquiries called within 5 minutes","description":"Fresh leads of the period whose first call came within 5 minutes (Salesforce’s TAT of lead creation to 1st connection, in minutes), per owner and creation hour. Reads Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_fresh_ok}}"}}}

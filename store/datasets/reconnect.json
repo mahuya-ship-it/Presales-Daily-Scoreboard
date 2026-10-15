@@ -1,0 +1,1 @@
+{"title":"Reconnect requests","description":"Salesforce \"Reconnect with Customer.\" tasks of the period, one row per customer, with the lead’s details and its latest logged call. Reads Task and Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_reconnect}}"}}}

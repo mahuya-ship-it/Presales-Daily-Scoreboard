@@ -1,0 +1,1 @@
+{"title":"Roji Ganguly - morning tasks","description":"Tasks open on the morning of the report day for Roji Ganguly, with the lead\u0027s name and status. Reads Task and Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_tasks_roji}}"}}}

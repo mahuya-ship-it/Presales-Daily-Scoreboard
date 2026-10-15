@@ -1,0 +1,1 @@
+{"title":"Fresh enquiries that missed 5 minutes","description":"Office-hours fresh leads of the period with no first call or a first call after 5 minutes, newest first (latest 2,000). Reads Lead.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_fresh_missed}}"}}}

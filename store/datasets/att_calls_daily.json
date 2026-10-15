@@ -1,0 +1,1 @@
+{"title":"Calls per executive per day","description":"Calls of any kind each executive logged per IST day, for the attendance log and weekly roster. Reads Task.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_att_calls}}"}}}

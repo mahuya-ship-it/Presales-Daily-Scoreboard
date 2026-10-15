@@ -1,0 +1,1 @@
+{"title":"Calls per executive over the period","description":"Logged calls (distinct call times) and leads called per executive, with Salesforce’s team total. Reads Task.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_calls_sum}}"}}}

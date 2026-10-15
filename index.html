@@ -1,0 +1,1364 @@
+<style>
+  /* Alcove navy + gold band on top; a task menu beside one task screen. Each task has its own colour. */
+  #dash-root { --dash-gutter: clamp(12px, 2.5vw, 28px); }
+  .ps {
+    --navy: #204768; --navy-deep: #16324e; --gold: #EFCC25; --gold-deep: #b6910f;
+    --t0: #5B6CFF; --t1: #E0462F; --t2: #1F8FB8; --t3: #D49A12; --t4: #8E4FD0; --t5: #D9437E; --good: #1E9E6A;
+    display: grid; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums;
+  }
+  .ps-band {
+    background: linear-gradient(120deg, var(--navy-deep), var(--navy) 55%, #2a5a82);
+    border-radius: calc(var(--cds-radius) * 1.6); color: #fff; padding: var(--cds-pad-lg) var(--cds-pad-xl);
+    display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; justify-content: space-between;
+    border-bottom: 4px solid var(--gold); position: relative; overflow: hidden;
+  }
+  .ps-band::after { content: ""; position: absolute; right: -60px; top: -80px; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 204, 37, .28), rgba(239, 204, 37, 0) 70%); pointer-events: none; }
+  .ps-brand { font-size: var(--cds-font-size-caption); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  .ps-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 2px 0 0; color: #fff; text-wrap: balance; }
+  .ps-title span { color: var(--gold); }
+  .ps-sub { margin: var(--cds-gap-xs) 0 0; color: #d6e2f0; font-size: var(--cds-font-size-body); }
+  .ps-date { display: flex; gap: var(--cds-gap-xs); align-items: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .ps-date label { font-size: var(--cds-font-size-caption); color: #d6e2f0; }
+  .ps-date input, .ps-date button { font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-radius: var(--cds-radius); border: 1px solid rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .12); color: #fff; color-scheme: dark; }
+  .ps-date button { cursor: pointer; }
+  .ps-date button:hover:not(:disabled) { background: rgba(255, 255, 255, .22); }
+  .ps-date button:disabled { opacity: .45; cursor: default; }
+  .ps-date .ps-today { background: var(--gold); color: var(--navy-deep); border-color: var(--gold); font-weight: 600; }
+  .ps-date .ps-all[aria-pressed="true"], .ps-date .ps-today[aria-pressed="false"] { background: rgba(255, 255, 255, .12); color: #fff; border-color: rgba(255, 255, 255, .35); font-weight: 400; }
+  .ps-date .ps-all[aria-pressed="true"] { background: var(--gold); color: var(--navy-deep); border-color: var(--gold); font-weight: 600; }
+  .ps-range { display: flex; gap: var(--cds-gap-xs); align-items: center; flex-wrap: wrap; }
+  .ps-date :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .ps-date .ps-export { background: #fff; color: var(--navy-deep); border-color: #fff; font-weight: 700; padding-inline: var(--cds-pad-md); }
+  .ps-date .ps-export:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); }
+  .ps-export-msg { position: relative; z-index: 1; flex-basis: 100%; margin: 0; text-align: right; font-size: var(--cds-font-size-caption); color: var(--gold); }
+
+  .ps-shell { display: grid; grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr); gap: var(--cds-gap-lg); align-items: start; }
+  @media (max-width: 860px) { .ps-shell { grid-template-columns: minmax(0, 1fr); } }
+  .ps-nav { display: grid; gap: var(--cds-gap-sm); position: sticky; top: 8px; }
+  @media (max-width: 860px) { .ps-nav { position: static; grid-auto-flow: column; grid-auto-columns: minmax(12rem, 1fr); overflow-x: auto; padding-bottom: 4px; } }
+  .ps-tab {
+    --c: var(--t0);
+    text-align: left; font: inherit; cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 2px var(--cds-gap-sm); align-items: center;
+    padding: var(--cds-pad-sm) var(--cds-pad-md); border-radius: calc(var(--cds-radius) * 1.4);
+    border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg);
+    transition: background var(--cds-dur-slow), border-color var(--cds-dur-slow), transform var(--cds-dur-slow);
+  }
+  .ps-tab:hover { border-color: var(--c); transform: translateY(-1px); }
+  .ps-tab:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  .ps-tab[aria-selected="true"] { background: color-mix(in srgb, var(--c) 14%, var(--color-panel)); border-color: var(--c); box-shadow: inset 4px 0 0 var(--c); }
+  .ps-tab .n { grid-row: span 2; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 700; font-size: var(--cds-font-size-body); }
+  .ps-tab .t { font-weight: 600; font-size: var(--cds-font-size-body); line-height: 1.25; }
+  .ps-tab .m { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ps-tab .m b { color: color-mix(in srgb, var(--c) 80%, var(--color-fg)); font-weight: 700; }
+  .ps-tab.t0 { --c: var(--t0); } .ps-tab.t1 { --c: var(--t1); } .ps-tab.t2 { --c: var(--t2); } .ps-tab.t3 { --c: var(--t3); } .ps-tab.t4 { --c: var(--t4); }
+  .ps-screen.t4 { --c: var(--t4); }
+  .ps-tab.t5 { --c: var(--t5); } .ps-screen.t5 { --c: var(--t5); }
+  .ps-bdays { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); gap: var(--cds-gap-md); }
+  .ps-bday { position: relative; overflow: hidden; display: grid; gap: 4px; padding: var(--cds-pad-md); border-radius: calc(var(--cds-radius) * 1.4); color: #fff; background: linear-gradient(135deg, var(--navy-deep), var(--navy)); border-bottom: 3px solid var(--gold); }
+  .ps-bday::after { content: ""; position: absolute; right: -24px; top: -24px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 204, 37, .35), rgba(239, 204, 37, 0) 70%); }
+  .ps-bday .w { font-size: var(--cds-font-size-caption); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+  .ps-bday .nm { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); }
+  .ps-bday .dt { font-size: var(--cds-font-size-caption); color: #d6e2f0; }
+  .ps-bday.today { background: linear-gradient(135deg, #8a2c55, var(--t5)); }
+  .ps-roster td.cell { text-align: center; }
+  .ps-roster .sub { display: block; font-size: 11px; color: var(--color-fg-muted); margin-top: 2px; }
+
+  .ps-screen { display: grid; gap: var(--cds-gap-lg); min-width: 0; }
+  .ps-screen.t0 { --c: var(--t0); } .ps-screen.t1 { --c: var(--t1); } .ps-screen.t2 { --c: var(--t2); } .ps-screen.t3 { --c: var(--t3); }
+  .ps-sh { display: grid; gap: var(--cds-gap-xs); padding: var(--cds-pad-md) var(--cds-pad-lg); border-radius: calc(var(--cds-radius) * 1.4); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, var(--color-panel)), var(--color-panel)); border: 1px solid color-mix(in srgb, var(--c) 45%, var(--color-border-line)); }
+  .ps-sh .k { font-size: var(--cds-font-size-caption); letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: color-mix(in srgb, var(--c) 85%, var(--color-fg)); }
+  .ps-sh h2 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); text-wrap: balance; }
+  .ps-sh p { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 85ch; }
+
+  .ps-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-md); }
+  .ps-kpi { --k: var(--c, var(--t0)); position: relative; overflow: hidden; display: grid; gap: 2px; align-content: start; min-height: 6.4rem; padding: var(--cds-pad-md); border-radius: calc(var(--cds-radius) * 1.3); background: color-mix(in srgb, var(--k) 10%, var(--color-panel)); border: 1px solid color-mix(in srgb, var(--k) 35%, var(--color-border-line)); }
+  .ps-kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--k); }
+  .ps-kpi.good { --k: var(--good); } .ps-kpi.bad { --k: var(--t1); } .ps-kpi.blue { --k: var(--t2); } .ps-kpi.gold { --k: var(--t3); } .ps-kpi.violet { --k: var(--t0); }
+  .ps-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: 600; }
+  .ps-kpi-val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; color: color-mix(in srgb, var(--k) 78%, var(--color-fg)); }
+  .ps-kpi-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+  .ps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+  .ps-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: calc(var(--cds-radius) * 1.3); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-sm); min-width: 0; align-content: start; border-top: 3px solid var(--c, var(--t0)); }
+  .ps-card h3 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .ps-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 85ch; }
+  .ps-scroll { overflow-x: auto; }
+  .ps-scroll.tall { max-height: 26rem; overflow: auto; }
+  .ps-t { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
+  .ps-t th, .ps-t td { padding: 6px var(--cds-pad-sm); text-align: right; white-space: nowrap; }
+  .ps-t th { position: sticky; top: 0; z-index: 1; color: #fff; font-weight: 600; background: var(--navy); }
+  .ps-t th:first-child { border-top-left-radius: 6px; } .ps-t th:last-child { border-top-right-radius: 6px; }
+  .ps-t td { border-bottom: 1px solid var(--color-border-line); }
+  .ps-t tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c, var(--t0)) 5%, var(--color-panel)); }
+  .ps-t tbody tr:hover td { background: color-mix(in srgb, var(--c, var(--t0)) 12%, var(--color-panel)); }
+  .ps-t th:first-child, .ps-t td:first-child, .ps-t .l { text-align: left; }
+  .ps-t tr.team td { font-weight: 700; background: color-mix(in srgb, var(--gold) 22%, var(--color-panel)) !important; border-top: 2px solid var(--gold-deep); }
+  .ps-t tr.absent td { color: var(--color-fg-muted); font-style: italic; }
+  .ps-t tr.top td:first-child { box-shadow: inset 3px 0 0 var(--good); }
+  .ps-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); font-weight: 600; }
+  .ps-chip.good { background: color-mix(in srgb, var(--good) 18%, var(--color-panel)); color: color-mix(in srgb, var(--good) 80%, var(--color-fg)); }
+  .ps-chip.bad { background: color-mix(in srgb, var(--t1) 18%, var(--color-panel)); color: color-mix(in srgb, var(--t1) 85%, var(--color-fg)); }
+  .ps-chip.warn { background: color-mix(in srgb, var(--t3) 22%, var(--color-panel)); color: color-mix(in srgb, var(--t3) 75%, var(--color-fg)); }
+  .ps-chip.muted { background: color-mix(in srgb, var(--color-fg-muted) 14%, var(--color-panel)); color: var(--color-fg-muted); }
+  .ps-chart { position: relative; min-height: 12rem; }
+  .ps-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ps-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .ps-tip { position: absolute; pointer-events: none; z-index: 2; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; }
+  .ps-tip .d { color: var(--cds-text-secondary); }
+  .ps-ins { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cds-gap-sm); counter-reset: ins; }
+  .ps-ins li { counter-increment: ins; display: grid; grid-template-columns: 1.8rem 1fr; gap: var(--cds-gap-sm); align-items: start; font-size: var(--cds-font-size-body); padding: var(--cds-pad-sm); border-radius: var(--cds-radius); background: color-mix(in srgb, var(--t0) 7%, var(--color-panel)); }
+  .ps-ins li::before { content: counter(ins); width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: var(--t0); color: #fff; font-weight: 700; font-size: var(--cds-font-size-caption); }
+  .ps-fail { display: flex; align-items: center; justify-content: center; gap: var(--cds-gap-xs); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-height: 4rem; }
+  .ps-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+  [data-dash-source-state=empty] { color: transparent; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  @media (prefers-reduced-motion: no-preference) { .ps-screen:not([hidden]) { animation: ps-in var(--cds-dur-slow) var(--cds-ease-out); } }
+  @keyframes ps-in { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+</style>
+
+<div class="ps">
+  <header class="ps-band" id="top">
+    <div>
+      <div class="ps-brand">Alcove Realty · New Kolkata presales</div>
+      <h1 class="ps-title">Presales <span>Daily Scorecard</span></h1>
+      <p class="ps-sub">Report for <b class="ps-day">—</b> · live from Salesforce</p>
+    </div>
+    <div class="ps-date">
+      <button type="button" class="ps-prev" aria-label="Previous period">‹</button>
+      <span class="ps-range">
+        <label for="ps-from">From</label>
+        <input id="ps-from" class="ps-from" type="date" min="2025-10-01">
+        <label for="ps-to">To</label>
+        <input id="ps-to" class="ps-to" type="date" min="2025-10-01">
+      </span>
+      <button type="button" class="ps-next" aria-label="Next period">›</button>
+      <button type="button" class="ps-today" aria-pressed="false">Today</button>
+      <button type="button" class="ps-all" aria-pressed="false" title="Everything since 1 Oct 2025, when the Reconnect records start">All time</button>
+      <button type="button" class="ps-export" title="Download the selected period's report as an Excel workbook">⤓ Export</button>
+    </div>
+    <p class="ps-export-msg" role="status" hidden></p>
+  </header>
+
+  <div class="ps-shell">
+    <nav class="ps-nav" role="tablist" aria-label="Tasks">
+      <button type="button" class="ps-tab t0" role="tab" id="tab-overview" data-screen="overview" aria-selected="true">
+        <span class="n">★</span><span class="t">Day overview</span>
+        <span class="m">All three tasks at a glance</span>
+      </button>
+      <button type="button" class="ps-tab t1" role="tab" id="tab-task1" data-screen="task1" aria-selected="false">
+        <span class="n">1</span><span class="t">5-minute fresh-lead call</span>
+        <span class="m"><b data-source="kpis" data-field="missed_5min" data-row="0">—</b> missed · SOP <b data-source="kpis" data-field="sop_pct" data-row="0">—</b></span>
+      </button>
+      <button type="button" class="ps-tab t2" role="tab" id="tab-task2" data-screen="task2" aria-selected="false">
+        <span class="n">2</span><span class="t">Reconnect with Customer</span>
+        <span class="m"><b data-source="kpis" data-field="reconnect_requests" data-row="0">—</b> requests · <b data-source="kpis" data-field="reconnect_pending" data-row="0">—</b> pending</span>
+      </button>
+      <button type="button" class="ps-tab t3" role="tab" id="tab-task3" data-screen="task3" aria-selected="false">
+        <span class="n">3</span><span class="t">Priority target vs achievement</span>
+        <span class="m"><b data-source="kpis" data-field="priority_pct" data-row="0">—</b> of priority leads called</span>
+      </button>
+      <button type="button" class="ps-tab t4" role="tab" id="tab-task4" data-screen="task4" aria-selected="false">
+        <span class="n">4</span><span class="t">Attendance &amp; weekly roster</span>
+        <span class="m"><b data-source="attendance_today" data-where="executive=Team" data-field="present">—</b> present · <b data-source="attendance_today" data-where="executive=Team" data-field="absent">—</b> absent</span>
+      </button>
+      <button type="button" class="ps-tab t5" role="tab" id="tab-team" data-screen="team" aria-selected="false">
+        <span class="n">♥</span><span class="t">Team &amp; birthdays</span>
+        <span class="m ps-next-bday">Staff list, birthdays, anniversaries</span>
+      </button>
+    </nav>
+
+    <div>
+      <!-- Overview -->
+      <section class="ps-screen t0" id="overview" role="tabpanel" aria-labelledby="tab-overview">
+        <div class="ps-sh"><span class="k">Day overview</span><h2>How the team did on <span class="ps-day">—</span></h2><p>Headline figures from all three tasks. Pick a task on the left for its full report.</p></div>
+        <div class="ps-kpis">
+          <div class="ps-kpi gold"><span class="ps-kpi-label">Priority leads called</span><span class="ps-kpi-val" data-source="kpis" data-field="priority_pct" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="priority_called" data-row="0">—</span> of <span data-source="kpis" data-field="priority_target" data-row="0">—</span></span></div>
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Fresh enquiries</span><span class="ps-kpi-val" data-source="kpis" data-field="fresh_enquiries" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="office_hours_fresh" data-row="0">—</span> in office hours</span></div>
+          <div class="ps-kpi bad"><span class="ps-kpi-label">Missed 5-minute call</span><span class="ps-kpi-val" data-source="kpis" data-field="missed_5min" data-row="0">—</span><span class="ps-kpi-sub">SOP met <span data-source="kpis" data-field="sop_pct" data-row="0">—</span></span></div>
+          <div class="ps-kpi good"><span class="ps-kpi-label">Connected customers</span><span class="ps-kpi-val" data-source="kpis" data-field="connected_customers" data-row="0">—</span><span class="ps-kpi-sub">of <span data-source="kpis" data-field="leads_called" data-row="0">—</span> leads called</span></div>
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Calls made</span><span class="ps-kpi-val" data-source="kpis" data-field="total_calls" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="priority_calls" data-row="0">—</span> on priority leads</span></div>
+          <div class="ps-kpi blue"><span class="ps-kpi-label">Reconnect requests</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_requests" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="reconnect_pending" data-row="0">—</span> not called back</span></div>
+        </div>
+        <div class="ps-card" id="insights-card"><h3>Insights for the day</h3><ol class="ps-ins" data-source="insights"></ol></div>
+        <div class="ps-card" id="calls-card"><h3>Calls and connected customers</h3><p class="ps-note">All logged calls by the team that day. A connected customer had at least one call with a result other than CNR, NNR, switched off, not reachable, ringing or disconnected.</p><div class="ps-scroll"><table class="ps-t" id="calls-table" data-source="calls_by_exec" data-row-key="executive"></table></div></div>
+      </section>
+
+      <!-- Task 1 -->
+      <section class="ps-screen t1" id="task1" role="tabpanel" aria-labelledby="tab-task1" hidden>
+        <div class="ps-sh"><span class="k">Task 1</span><h2>Fresh enquiries and the 5-minute call</h2><p>Fresh enquiry: Inbound or Outbound lead created from 6:30 PM the day before to 6:30 PM on the day. In office hours (10:00 AM–6:30 PM) the first call is due within 5 minutes; overnight leads are due by 12 noon.</p></div>
+        <div class="ps-kpis">
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Fresh enquiries</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="fresh_enquiries">—</span><span class="ps-kpi-sub">6:30 PM to 6:30 PM</span></div>
+          <div class="ps-kpi blue"><span class="ps-kpi-label">In office hours</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="office_hours">—</span><span class="ps-kpi-sub">10:00 AM–6:30 PM</span></div>
+          <div class="ps-kpi good"><span class="ps-kpi-label">Called within 5 min</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="within_5_min">—</span><span class="ps-kpi-sub">SOP met <span data-source="fresh_by_owner" data-where="owner=Team" data-field="sop_met">—</span></span></div>
+          <div class="ps-kpi bad"><span class="ps-kpi-label">Missed 5 minutes</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="missed_5_min">—</span><span class="ps-kpi-sub"><span data-source="fresh_by_owner" data-where="owner=Team" data-field="not_called">—</span> never called</span></div>
+          <div class="ps-kpi gold"><span class="ps-kpi-label">Overnight leads</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="overnight">—</span><span class="ps-kpi-sub"><span data-source="fresh_by_owner" data-where="owner=Team" data-field="overnight_called_by_noon">—</span> called by 12 noon</span></div>
+        </div>
+        <div class="ps-card" id="sop-chart-card"><h3>5-minute SOP by lead owner</h3><p class="ps-note">Office-hours fresh leads: called within 5 minutes vs missed.</p><div class="ps-legend"><span><i style="background: var(--good)"></i>Within 5 min</span><span><i style="background: var(--t1)"></i>Missed</span></div><div class="ps-chart" id="sop-chart" data-source="fresh_by_owner"></div></div>
+        <div class="ps-card"><h3>By lead owner</h3><div class="ps-scroll"><table class="ps-t" id="fresh-table" data-source="fresh_by_owner" data-row-key="owner"></table></div></div>
+        <div class="ps-card"><h3>Leads that missed the 5-minute call</h3><p class="ps-note ps-fm-note">Office-hours fresh leads with no first call, or a first call after 5 minutes.</p><div class="ps-scroll tall"><table class="ps-t" id="missed-table" data-source="fresh_missed" data-row-key="lead_id"></table></div></div>
+      </section>
+
+      <!-- Task 2 -->
+      <section class="ps-screen t2" id="task2" role="tabpanel" aria-labelledby="tab-task2" hidden>
+        <div class="ps-sh"><span class="k">Task 2</span><h2>Reconnect with Customer</h2><p>Existing customers who enquired again in the selected period (Salesforce "Reconnect with Customer." tasks), one row per customer. Called back = a call was logged on the lead, by anyone, after the customer's latest request. Missed = no call since then and the lead is still open; leads now Converted or Closed Lost are counted separately. Pick All time for every request since 11 Oct 2025.</p></div>
+        <div class="ps-kpis">
+          <div class="ps-kpi blue"><span class="ps-kpi-label">Customers who asked</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_requests" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="reconnect_tasks" data-row="0">—</span> requests</span></div>
+          <div class="ps-kpi good"><span class="ps-kpi-label">Called back</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_called_back" data-row="0">—</span><span class="ps-kpi-sub">after the request</span></div>
+          <div class="ps-kpi bad"><span class="ps-kpi-label">Missed</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_pending" data-row="0">—</span><span class="ps-kpi-sub">open leads still waiting</span></div>
+          <div class="ps-kpi gold"><span class="ps-kpi-label">Call-back rate</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_rate" data-row="0">—</span><span class="ps-kpi-sub">called ÷ (called + missed)</span></div>
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Closed, no call</span><span class="ps-kpi-val" data-source="kpis" data-field="reconnect_closed" data-row="0">—</span><span class="ps-kpi-sub">now Converted or Closed Lost</span></div>
+        </div>
+        <div class="ps-card"><h3>By lead owner</h3><p class="ps-note">Current lead owner in Salesforce. Requests with no lead linked are listed as their own row.</p><div class="ps-scroll"><table class="ps-t" id="reconnect-owner-table" data-source="reconnect_by_owner" data-row-key="owner"></table></div></div>
+        <div class="ps-card"><h3>Missed customers: still waiting for a call</h3><p class="ps-note">Grouped by lead owner, latest request first.</p><div class="ps-scroll tall"><table class="ps-t" id="reconnect-missed-table" data-source="reconnect_list" data-row-key="lead_id"></table></div></div>
+        <div class="ps-card"><h3>Every customer who asked</h3><p class="ps-note ps-rc-note">Latest request first.</p><div class="ps-scroll tall"><table class="ps-t" id="reconnect-table" data-source="reconnect_list" data-row-key="lead_id"></table></div></div>
+      </section>
+
+      <!-- Task 3 -->
+      <section class="ps-screen t3" id="task3" role="tabpanel" aria-labelledby="tab-task3" hidden>
+        <div class="ps-sh"><span class="k">Task 3</span><h2>Priority calls: target vs achievement</h2><p class="ps-daynote" hidden>The priority list is made fresh each morning, so this screen shows one day: the To date, <b class="ps-today-label">—</b>.</p><p>Target is each executive's morning P1–P4 list (P1 hot leads due that day, P2 hot leads overdue, P3 follow-ups due, P4 follow-ups overdue, top 25). Called (achieved) = at least one logged call that day, or the lead was Registered or Closed Lost that day even without a call task. An executive with no logged calls is absent and left out of the team row.</p></div>
+        <div class="ps-kpis">
+          <div class="ps-kpi gold"><span class="ps-kpi-label">Achievement</span><span class="ps-kpi-val" data-source="kpis" data-field="priority_pct" data-row="0">—</span><span class="ps-kpi-sub"><span data-source="kpis" data-field="priority_called" data-row="0">—</span> of <span data-source="kpis" data-field="priority_target" data-row="0">—</span> called</span></div>
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Morning target</span><span class="ps-kpi-val" data-source="kpis" data-field="priority_target" data-row="0">—</span><span class="ps-kpi-sub">present executives</span></div>
+          <div class="ps-kpi good"><span class="ps-kpi-label">Connected</span><span class="ps-kpi-val" data-source="kpis" data-field="priority_connected" data-row="0">—</span><span class="ps-kpi-sub">priority leads reached</span></div>
+          <div class="ps-kpi blue"><span class="ps-kpi-label">Calls on these leads</span><span class="ps-kpi-val" data-source="kpis" data-field="priority_calls" data-row="0">—</span><span class="ps-kpi-sub">attempts that day</span></div>
+          <div class="ps-kpi bad"><span class="ps-kpi-label">Hot leads not called</span><span class="ps-kpi-val" data-source="kpis" data-field="hot_not_called" data-row="0">—</span><span class="ps-kpi-sub">P1/P2</span></div>
+        </div>
+        <div class="ps-grid">
+          <div class="ps-card" id="priority-chart-card"><h3>Called vs target by executive</h3><div class="ps-legend"><span><i style="background: var(--t3)"></i>Called</span><span><i style="background: var(--cds-chart-muted)"></i>Not called</span></div><div class="ps-chart" id="priority-chart" data-source="priority_by_exec"></div></div>
+          <div class="ps-card"><h3>Effectiveness</h3><p class="ps-note">Priority leads whose status moved up that day, Closed Lost, and hot leads reconnected.</p><div class="ps-scroll"><table class="ps-t" id="effect-table" data-source="priority_by_exec" data-row-key="executive"></table></div></div>
+        </div>
+        <div class="ps-card"><h3>Segregation by priority (called / target)</h3><div class="ps-scroll"><table class="ps-t" id="priority-table" data-source="priority_by_exec" data-row-key="executive"></table></div></div>
+        <div class="ps-card"><h3>Hot leads (P1/P2) not called</h3><p class="ps-note">Present executives only, in morning-list order.</p><div class="ps-scroll tall"><table class="ps-t" id="hot-table" data-source="priority_leads" data-row-key="lead_id"></table></div></div>
+      </section>
+
+      <!-- Task 4 -->
+      <section class="ps-screen t4" id="task4" role="tabpanel" aria-labelledby="tab-task4" hidden>
+        <div class="ps-sh"><span class="k">Task 4</span><h2>Attendance log and weekly roster</h2><p>Worked out from Salesforce each day: Present = at least one call logged that day. Allocated, no calls = fresh leads were assigned but no call was logged (counted as absent). Absent = no calls and no fresh leads. The week runs Monday to Sunday.</p></div>
+        <div class="ps-kpis">
+          <div class="ps-kpi good"><span class="ps-kpi-label">Present on the day</span><span class="ps-kpi-val" data-source="attendance_today" data-where="executive=Team" data-field="present">—</span><span class="ps-kpi-sub">executives with calls</span></div>
+          <div class="ps-kpi bad"><span class="ps-kpi-label">Absent on the day</span><span class="ps-kpi-val" data-source="attendance_today" data-where="executive=Team" data-field="absent">—</span><span class="ps-kpi-sub"><span data-source="attendance_today" data-where="executive=Team" data-field="flagged">—</span> had leads allocated</span></div>
+          <div class="ps-kpi violet"><span class="ps-kpi-label">Present days this week</span><span class="ps-kpi-val" data-source="roster_week" data-where="executive=Team%20present" data-field="days_present">—</span><span class="ps-kpi-sub">of <span data-source="roster_week" data-where="executive=Team%20present" data-field="days_so_far">—</span> executive-days so far</span></div>
+          <div class="ps-kpi gold"><span class="ps-kpi-label ps-period-k">Attendance this month</span><span class="ps-kpi-val" data-source="attendance_month" data-where="executive=Team" data-field="attendance_rate">—</span><span class="ps-kpi-sub"><span data-source="attendance_month" data-where="executive=Team" data-field="present">—</span> present executive-days</span></div>
+        </div>
+        <div class="ps-card"><h3>Attendance on <span class="ps-today-label">—</span></h3><div class="ps-scroll"><table class="ps-t" id="att-day-table" data-source="attendance_today" data-row-key="executive"></table></div></div>
+        <div class="ps-card"><h3>Weekly roster</h3><p class="ps-note">Each day shows the status, with calls and fresh leads allocated underneath. The last columns count the days.</p><div class="ps-scroll"><table class="ps-t ps-roster" id="roster-table" data-source="roster_week" data-row-key="executive"></table></div></div>
+        <div class="ps-card"><h3 class="ps-period-h">This month so far</h3><div class="ps-scroll"><table class="ps-t" id="att-month-table" data-source="attendance_month" data-row-key="executive"></table></div></div>
+        <div class="ps-card"><h3>Daily log</h3><p class="ps-note">Every executive, every day from the 1st of the month (or the Monday of the week, if earlier), newest first.</p><div class="ps-scroll tall"><table class="ps-t" id="att-log-table" data-source="attendance_log" data-row-key="key"></table></div></div>
+      </section>
+
+      <!-- Team & birthdays -->
+      <section class="ps-screen t5" id="team" role="tabpanel" aria-labelledby="tab-team" hidden>
+        <div class="ps-sh"><span class="k">Team</span><h2>Team, birthdays and work anniversaries</h2><p>Counted from the report date. On a birthday, the EA sends the team member a greeting card and message from you on WhatsApp at 9:05 AM, and tells you the day before.</p></div>
+        <div class="ps-card"><h3>Coming up in the next 60 days</h3><div class="ps-bdays" id="bday-cards" data-source="team_directory"></div></div>
+        <div class="ps-card"><h3>Team directory</h3><div class="ps-scroll"><table class="ps-t" id="team-table" data-source="team_directory" data-row-key="name"></table></div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // Date handling and the Salesforce queries for the chosen IST period (From–To). Daily-only parts use the To date.
+  const IDS = {
+    roji: '0058Z000008aD6JQAU', mahuya_das: '0058Z000008aD6TQAU', sangita: '0058Z000008aDo6QAE',
+    rima: '0058Z000008aD4wQAE', tania: '0058Z000008aD6dQAE'
+  };
+  const ALL = "('" + Object.values(IDS).join("','") + "')";
+  const CALLSUBJ = "('Call Back','Call Log','Follow-Up For Site Visit')";
+  const NOTCONN = "('Call Not Received','Number Not Reachable','Switched Off','Not Reachable','Ringing','Disconnected')";
+  const FRESH = "Enquiry_Type__c IN ('Inbound','Outbound')";
+  // Office hours 10:00 AM–6:30 PM IST: IST hour 10–17, or 18:00–18:29 (IST hour 18 with UTC hour 12).
+  const OFFICE = '(HOUR_IN_DAY(convertTimezone(Enquiry_Date__c)) >= 10 AND (HOUR_IN_DAY(convertTimezone(Enquiry_Date__c)) <= 17 OR HOUR_IN_DAY(Enquiry_Date__c) = 12))';
+  const START = '2025-10-01';
+  const istToday = () => new Date(Date.now() + 19800000).toISOString().slice(0, 10);
+  const shift = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+  const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
+  const buildParams = (from, to, all) => {
+    const D = to;
+    const P = shift(D, -1);
+    const T0 = P + 'T18:30:00Z', T1 = D + 'T18:30:00Z';
+    // The period: IST midnight-to-midnight for tasks; the fresh-lead day runs 6:30 PM to 6:30 PM.
+    const R0 = shift(from, -1) + 'T18:30:00Z', R1 = T1, F0 = shift(from, -1) + 'T13:00:00Z', F1 = D + 'T13:00:00Z';
+    const p = { date: D, from, to, all: !!all };
+    // The last clause is always true; it carries the period's start to the loader, which reports From and To beside the day's count.
+    p.q_day = 'SELECT DAY_ONLY(convertTimezone(CreatedDate)) d, COUNT(Id) n FROM Task WHERE CreatedDate >= ' + T0 + ' AND CreatedDate < ' + T1 + ' AND CreatedDate >= ' + R0 + ' GROUP BY DAY_ONLY(convertTimezone(CreatedDate))';
+    Object.entries(IDS).forEach(([k, id]) => {
+      p['q_tasks_' + k] = "SELECT Id, WhoId, OwnerId, Subject, CallDisposition, CreatedDate, ActivityDate, TYPEOF Who WHEN Lead THEN Name, Status, Enquiry_Date__c, Last_Activity_Call_Result__c END FROM Task WHERE OwnerId = '" + id + "' AND ActivityDate <= " + D + ' AND CreatedDate < ' + T0 + ' AND WhoId != null AND (IsClosed = false OR LastModifiedDate >= ' + T0 + ') ORDER BY Id LIMIT 2000';
+      p['q_att_' + k] = "SELECT WhoId, COUNT_DISTINCT(CreatedDate) a FROM Task WHERE OwnerId = '" + id + "' AND Subject IN " + CALLSUBJ + ' AND CallDisposition != null AND CreatedDate < ' + T0 + " AND WhoId IN (SELECT Id FROM Lead WHERE OwnerId = '" + id + "' AND (Status = 'Follow-up' OR LastModifiedDate >= " + T0 + ')) GROUP BY WhoId';
+    });
+    p.q_calls = 'SELECT Id, WhoId, OwnerId, Subject, CallDisposition, CreatedDate FROM Task WHERE OwnerId IN ' + ALL + ' AND Subject IN ' + CALLSUBJ + ' AND CallDisposition != null AND CreatedDate >= ' + T0 + ' AND CreatedDate < ' + T1 + ' ORDER BY Id LIMIT 2000';
+    p.q_history = "SELECT LeadId, OldValue, NewValue, CreatedDate FROM LeadHistory WHERE Field = 'Status' AND CreatedDate >= " + T0 + ' ORDER BY CreatedDate LIMIT 2000';
+    // Fresh leads over the period, counted in Salesforce per owner and hour (exact for any length of period).
+    // Within 5 min uses Salesforce's TAT_of_Lead_Creation_to1st_Conn_in_min__c (minutes from creation to first call).
+    const FR = ' FROM Lead WHERE ' + FRESH + ' AND Enquiry_Date__c >= ' + F0 + ' AND Enquiry_Date__c < ' + F1;
+    const HRS = ' GROUP BY Owner.Name, HOUR_IN_DAY(convertTimezone(Enquiry_Date__c)), HOUR_IN_DAY(Enquiry_Date__c)';
+    const HSEL = 'SELECT Owner.Name o, HOUR_IN_DAY(convertTimezone(Enquiry_Date__c)) hi, HOUR_IN_DAY(Enquiry_Date__c) hu, COUNT(Id) n';
+    p.q_fresh_all = HSEL + FR + HRS;
+    p.q_fresh_nc = HSEL + FR + ' AND First_Call_Date_Time__c = null' + HRS;
+    p.q_fresh_ok = HSEL + FR + ' AND TAT_of_Lead_Creation_to1st_Conn_in_min__c <= 5' + HRS;
+    p.q_fresh_missed = 'SELECT Id, Name, Owner.Name, Enquiry_Date__c, First_Call_Date_Time__c, TAT_of_Lead_Creation_to1st_Conn_in_min__c, Sub_source_Text__c, Inq_pkl_Source__c' + FR + ' AND ' + OFFICE + ' AND (First_Call_Date_Time__c = null OR TAT_of_Lead_Creation_to1st_Conn_in_min__c > 5) ORDER BY Enquiry_Date__c DESC LIMIT 2000';
+    // Lead by lead (for "overnight leads called by 12 noon"): only for periods of up to 14 days.
+    p.q_fresh = days(from, to) <= 14
+      ? 'SELECT Id, Name, Owner.Name, Enquiry_Date__c, First_Call_Date_Time__c, Enquiry_Type__c, Sub_source_Text__c, Inq_pkl_Source__c' + FR + ' ORDER BY Enquiry_Date__c LIMIT 2000'
+      : 'SELECT Id, Name, Owner.Name, Enquiry_Date__c, First_Call_Date_Time__c, Enquiry_Type__c, Sub_source_Text__c, Inq_pkl_Source__c FROM Lead WHERE ' + FRESH + ' AND Enquiry_Date__c < 2000-01-01T00:00:00Z LIMIT 1';
+    // Calls and connected customers over the period, counted in Salesforce (the ROLLUP row is the team).
+    const CW = ' FROM Task WHERE OwnerId IN ' + ALL + ' AND Subject IN ' + CALLSUBJ + ' AND CallDisposition != null AND CreatedDate >= ' + R0 + ' AND CreatedDate < ' + R1;
+    p.q_calls_sum = 'SELECT OwnerId, COUNT_DISTINCT(CreatedDate) c, COUNT_DISTINCT(WhoId) l' + CW + ' GROUP BY ROLLUP(OwnerId)';
+    p.q_conn_sum = 'SELECT OwnerId, COUNT_DISTINCT(WhoId) l' + CW + ' AND CallDisposition NOT IN ' + NOTCONN + ' GROUP BY ROLLUP(OwnerId)';
+    // Reconnect requests over the period; the loader follows the pages and looks up each lead and its latest call.
+    p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
+    // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
+    // The query covers the first 200 days (W); the loader asks for the rest up to E in 200-day steps.
+    const dow = new Date(D + 'T00:00:00Z').getUTCDay();
+    const mon = shift(D, -((dow + 6) % 7));
+    const first = D.slice(0, 8) + '01';
+    const startDay = [from, first, mon].sort()[0];
+    const S = shift(startDay, -1) + 'T18:30:00Z', E = shift(mon, 6) + 'T18:30:00Z';
+    const W = [shift(startDay, 199) + 'T18:30:00Z', E].sort()[0];
+    p.q_att_calls = 'SELECT OwnerId, DAY_ONLY(convertTimezone(CreatedDate)) d, COUNT(Id) n FROM Task WHERE OwnerId IN ' + ALL + ' AND CallDisposition != null AND CreatedDate >= ' + S + ' AND CreatedDate < ' + W + ' AND CreatedDate < ' + E + ' GROUP BY OwnerId, DAY_ONLY(convertTimezone(CreatedDate))';
+    p.q_att_fresh = 'SELECT OwnerId, DAY_ONLY(convertTimezone(Enquiry_Date__c)) d, COUNT(Id) n FROM Lead WHERE OwnerId IN ' + ALL + ' AND ' + FRESH + ' AND Enquiry_Date__c >= ' + S + ' AND Enquiry_Date__c < ' + W + ' AND Enquiry_Date__c < ' + E + ' GROUP BY OwnerId, DAY_ONLY(convertTimezone(Enquiry_Date__c))';
+    return p;
+  };
+  window.psBuildParams = buildParams;
+  window.psToday = istToday;
+  window.psShift = shift;
+  window.psDays = days;
+  window.psStart = START;
+  const ok = (d) => typeof d === 'string' && d >= START && d <= istToday();
+  // Opens on today; a link or a reader's own choice can carry a period, and All time always runs up to today.
+  const pp = dash.params();
+  const t0 = pp.all ? istToday() : ok(pp.to) ? pp.to : istToday();
+  const f0 = pp.all ? START : ok(pp.from) && pp.from <= t0 ? pp.from : t0;
+  dash.setParams(buildParams(f0, t0, !!pp.all));
+</script>
+
+<script>
+  // Salesforce answers ({totalSize, done, records}) as rows; nested lookups become Owner_Name, Who_Status and so on.
+  const sfRows = ({ answer }) => {
+    let a = answer;
+    if (typeof a === 'string') {
+      try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 400)); }
+    }
+    if (Array.isArray(a) && a.length && a[0] && a[0].errorCode) throw new Error(a.map((x) => x.message).join(' '));
+    if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
+    const cols = new Set();
+    const rows = a.records.map((r) => {
+      const o = {};
+      Object.entries(r).forEach(([k, v]) => {
+        if (k === 'attributes') return;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          Object.entries(v).forEach(([k2, v2]) => { if (k2 !== 'attributes') { o[k + '_' + k2] = v2; } });
+        } else o[k] = v;
+      });
+      Object.keys(o).forEach((c) => cols.add(c));
+      return o;
+    });
+    return { data: rows, columns: [...cols], cut: a.done === false };
+  };
+  // The report day (the To date) and the period's From date, read from the query's own date bounds.
+  dash.loader('day', {
+    description: 'The To date’s task count, with the period’s From and To dates (IST) taken from the query’s date bounds',
+    fn: ({ answer, args }) => {
+      let a = answer;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 400)); } }
+      if (Array.isArray(a) && a.length && a[0] && a[0].errorCode) throw new Error(a.map((y) => y.message).join(' '));
+      if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
+      const b = [...String(args.q).matchAll(/CreatedDate (?:>=|<) (\d{4}-\d\d-\d\d)T18:30:00Z/g)].map((m) => m[1]);
+      const next = (d) => new Date(Date.parse(d + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
+      const to = b[1], from = next(b[2] || b[0]);
+      return [{ d: to, from, to, n: a.records.reduce((s, r) => s + Number(r.n || 0), 0) }];
+    }
+  });
+
+  ['tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania', 'calls', 'status_history', 'fresh_leads', 'fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_missed_rows', 'calls_sum', 'conn_sum'].forEach((id) => {
+    dash.loader(id, { description: 'Salesforce records as rows (lookup fields flattened, e.g. Owner.Name becomes Owner_Name)', fn: sfRows });
+  });
+
+  // Attendance counts per owner per day: the query covers the first 200 days; later 200-day steps are asked for in turn.
+  const windowed = async ({ answer, call, args }) => {
+    const recs = (x) => {
+      let a = x;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 400)); } }
+      if (Array.isArray(a) && a.length && a[0] && a[0].errorCode) throw new Error(a.map((y) => y.message).join(' '));
+      if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
+      return a.records.map((r) => { const o = {}; Object.entries(r).forEach(([k, v]) => { if (k !== 'attributes') o[k] = v; }); return o; });
+    };
+    let rows = recs(answer);
+    const m = /(\w+) >= (\S+Z) AND \1 < (\S+Z) AND \1 < (\S+Z)/.exec(args.q);
+    if (m) {
+      const step = 200 * 86400000;
+      let lo = m[3];
+      while (lo < m[4]) {
+        const hi = new Date(Math.min(Date.parse(lo) + step, Date.parse(m[4]))).toISOString().replace('.000Z', 'Z');
+        const q = args.q.replace(m[0], m[1] + ' >= ' + lo + ' AND ' + m[1] + ' < ' + hi + ' AND ' + m[1] + ' < ' + m[4]);
+        rows = rows.concat(recs(await call('soqlQuery', { q })));
+        lo = hi;
+      }
+    }
+    return { columns: ['OwnerId', 'd', 'n'], rows };
+  };
+  ['att_calls_daily', 'att_fresh_daily'].forEach((id) => {
+    dash.loader(id, { description: 'Counts per owner per IST day, joined from 200-day steps so long periods stay within Salesforce’s 2,000-group limit', fn: windowed });
+  });
+
+  // Reconnect requests: every page of the period's tasks, then each lead (400 at a time) with its latest logged call.
+  dash.loader('reconnect', {
+    description: 'One row per customer who asked to reconnect in the period: requests, latest request, the lead’s current details and its latest logged call (follows Salesforce pages; leads looked up 400 at a time)',
+    fn: async ({ answer, call, args }) => {
+      const recs = (x) => {
+        let a = x;
+        if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 400)); } }
+        if (Array.isArray(a) && a.length && a[0] && a[0].errorCode) throw new Error(a.map((y) => y.message).join(' '));
+        if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
+        return a.records;
+      };
+      let tasks = recs(answer), page = tasks, n = 1, cut = false;
+      while (page.length === 2000) {
+        if (n >= 12) { cut = true; break; }
+        const q = args.q.replace(' ORDER BY Id', " AND Id > '" + page[page.length - 1].Id + "' ORDER BY Id");
+        page = recs(await call('soqlQuery', { q }));
+        tasks = tasks.concat(page);
+        n += 1;
+      }
+      const by = {};
+      tasks.forEach((t) => {
+        const k = t.WhoId && String(t.WhoId).startsWith('00Q') ? t.WhoId : 'task:' + t.Id;
+        const o = (by[k] = by[k] || { lead_id: k, requests: 0, first_request: t.CreatedDate, last_request: t.CreatedDate, task_owner: (t.Owner && t.Owner.Name) || '' });
+        o.requests += 1;
+        if (t.CreatedDate < o.first_request) o.first_request = t.CreatedDate;
+        if (t.CreatedDate >= o.last_request) { o.last_request = t.CreatedDate; o.task_owner = (t.Owner && t.Owner.Name) || o.task_owner; }
+      });
+      const ids = Object.keys(by).filter((k) => !k.startsWith('task:'));
+      const LQ = "SELECT Id, Name, Owner.Name, MobilePhone, mobile_no_converted_format_normal__c, Status, Inq_rltn_Project_Society__r.Name, Sub_source_Text__c, Inq_pkl_Source__c, Last_Activity_Call_Result__c, (SELECT CreatedDate, CallDisposition FROM Tasks WHERE Subject IN ('Call Back','Call Log','Follow-Up For Site Visit') AND CallDisposition != null ORDER BY CreatedDate DESC LIMIT 1) FROM Lead WHERE Id IN ";
+      for (let i = 0; i < ids.length; i += 400) {
+        const leads = recs(await call('soqlQuery', { q: LQ + "('" + ids.slice(i, i + 400).join("','") + "')" }));
+        leads.forEach((l) => {
+          const o = by[l.Id];
+          if (!o) return;
+          const c = l.Tasks && l.Tasks.records && l.Tasks.records[0];
+          Object.assign(o, {
+            client: l.Name || '', owner: (l.Owner && l.Owner.Name) || '', mobile: l.mobile_no_converted_format_normal__c || l.MobilePhone || '',
+            project: (l.Inq_rltn_Project_Society__r && l.Inq_rltn_Project_Society__r.Name) || '', lead_status: l.Status || '',
+            source: l.Sub_source_Text__c || l.Inq_pkl_Source__c || '', last_result: l.Last_Activity_Call_Result__c || '',
+            last_call: c ? c.CreatedDate : null, last_call_result: c ? c.CallDisposition || '' : ''
+          });
+        });
+      }
+      const cols = ['lead_id', 'client', 'owner', 'task_owner', 'mobile', 'project', 'lead_status', 'source', 'requests', 'first_request', 'last_request', 'last_call', 'last_call_result', 'last_result'];
+      const rows = Object.values(by).map((o) => Object.fromEntries(cols.map((c) => [c, o[c] === undefined ? null : o[c]])));
+      return { columns: cols, rows, cut, meta: [{ label: 'Reconnect tasks read', value: String(tasks.length) }, { label: 'Salesforce pages', value: String(n) }, { label: 'Leads looked up', value: String(ids.length) }] };
+    }
+  });
+</script>
+
+<script>
+  dash.calc('priority_leads', {
+    title: 'Morning priority list',
+    description: 'Each executive’s P1–P4 list as it stood that morning (Daily Priority Leads rules), with that day’s calls and status change.',
+    inputs: ['day', 'tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania', 'calls', 'status_history'],
+    fn: (day, tasks_roji, tasks_mahuya_das, tasks_sangita, tasks_rima, tasks_tania, att_roji, att_mahuya_das, att_sangita, att_rima, att_tania, calls, status_history) => {
+      const EX = { '0058Z000008aD6JQAU': 'Roji Ganguly', '0058Z000008aD6TQAU': 'Mahuya Das', '0058Z000008aDo6QAE': 'Sangita Biswas', '0058Z000008aD4wQAE': 'Rima Debnath', '0058Z000008aD6dQAE': 'Tania Banerjee' };
+      const HOT = { 'Registered': 1, 'Site Visit Done': 1, 'Requirement Qualified': 2, 'Semi Qualified': 3 };
+      const QUAL = ['Semi Qualified/Qualified', 'Semi-Qualified/Qualified', 'Qualified'];
+      const NREACH = ['Call Not Received', 'Number Not Reachable', 'Switched Off', 'Not Reachable', 'Ringing'];
+      const CB = ['Call Back', 'Call Back Requested'];
+      const UP = { 'Requirement Qualified': 'Req. Qualified', 'Semi Qualified': 'Semi Qualified', 'Registered': 'Registered', 'Site Visit Done': 'Registered' };
+      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      const rank = (s) => HOT[s] || 4;
+      const tasks = [].concat(tasks_roji, tasks_mahuya_das, tasks_sangita, tasks_rima, tasks_tania);
+      const RD = day.length ? String(day[0].d).slice(0, 10) : tasks.reduce((m, t) => (t.ActivityDate > m ? t.ActivityDate : m), '');
+      const morning = {}, fin = {}, dayNew = {};
+      status_history.slice().sort((a, b) => (a.CreatedDate < b.CreatedDate ? -1 : 1)).forEach((h) => {
+        if (!(h.LeadId in morning)) morning[h.LeadId] = h.OldValue;
+        if (ist(h.CreatedDate).slice(0, 10) <= RD) fin[h.LeadId] = h.NewValue;
+        if (ist(h.CreatedDate).slice(0, 10) === RD) (dayNew[h.LeadId] = dayNew[h.LeadId] || []).push(h.NewValue);
+      });
+      const A = {};
+      [].concat(att_roji, att_mahuya_das, att_sangita, att_rima, att_tania).forEach((r) => { A[r.WhoId] = (A[r.WhoId] || 0) + Number(r.a); });
+      const byLead = {};
+      calls.forEach((c) => {
+        if (!c.WhoId) return;
+        const d = (byLead[c.WhoId] = byLead[c.WhoId] || {});
+        if (!(c.CreatedDate in d) || c.Subject === 'Call Log') d[c.CreatedDate] = c.CallDisposition;
+      });
+      const due = {}, over = {}, L = {}, seen = {};
+      tasks.forEach((t) => {
+        if (seen[t.Id]) return;
+        seen[t.Id] = 1;
+        const w = t.WhoId;
+        if (!EX[t.OwnerId] || !w || !t.Who_Status) return;
+        L[w] = { name: t.Who_Name || '', status: morning[w] || t.Who_Status, last: t.Who_Last_Activity_Call_Result__c || '', enq: t.Who_Enquiry_Date__c || '' };
+        if (t.ActivityDate === RD) {
+          if (ist(t.CreatedDate).slice(0, 10) >= RD) return;
+          if (['Call Back', 'Reconnect with Customer.', 'Follow-Up For Site Visit'].indexOf(t.Subject) < 0) return;
+          if (!due[w]) due[w] = t;
+        } else if (t.ActivityDate < RD) {
+          if (!over[w] || t.ActivityDate < over[w].ActivityDate) over[w] = t;
+        }
+      });
+      const mk = (pr, w, t) => {
+        const l = L[w];
+        const last = t.CallDisposition || l.last;
+        let sub = 4;
+        if (CB.indexOf(last) >= 0 || ((pr === 1 || pr === 2) && QUAL.indexOf(last) >= 0)) sub = 1;
+        else if (NREACH.indexOf(last) >= 0) sub = 2;
+        else if (last === 'Disconnected') sub = 3;
+        return { w, pr, sub, ex: EX[t.OwnerId], name: l.name, status: l.status, od: Math.round((Date.parse(RD) - Date.parse(t.ActivityDate)) / 86400000), att: A[w] || 0, hot: HOT[l.status] || 4, enq: l.enq };
+      };
+      const list = [], done = {};
+      Object.keys(due).forEach((w) => {
+        const s = L[w].status;
+        if (HOT[s]) { list.push(mk(1, w, due[w])); done[w] = 1; }
+        else if (s === 'Follow-up' && (A[w] || 0) < 5) { list.push(mk(3, w, due[w])); done[w] = 1; }
+      });
+      Object.keys(over).forEach((w) => {
+        if (done[w] || due[w]) return;
+        const s = L[w].status;
+        if (HOT[s]) list.push(mk(2, w, over[w]));
+        else if (s === 'Follow-up' && (A[w] || 0) < 5) list.push(mk(4, w, over[w]));
+      });
+      const order = (a, b) => a.pr - b.pr || a.sub - b.sub || (a.pr <= 2 ? a.hot - b.hot || b.od - a.od : a.att - b.att || (a.pr === 4 ? (a.enq < b.enq ? 1 : -1) : 0));
+      const out = [];
+      Object.values(EX).forEach((e) => {
+        const mine = list.filter((x) => x.ex === e).sort(order);
+        mine.filter((x) => x.pr < 4).concat(mine.filter((x) => x.pr === 4).slice(0, 25)).forEach((x) => {
+          const d = byLead[x.w] || {};
+          const res = Object.keys(d).sort().map((k) => d[k]);
+          const f = fin[x.w] || '';
+          const dn = dayNew[x.w] || [];
+          const regToday = dn.indexOf('Registered') >= 0, lostToday = dn.indexOf('Closed Lost') >= 0;
+          // Mahuya's rule: a lead registered or closed lost on the day counts as achieved even without a call task.
+          out.push({
+            lead_id: x.w, executive: e, client: x.name, priority: 'P' + x.pr, sub_priority: 'P' + x.pr + '.' + x.sub,
+            morning_status: x.status, days_overdue: x.od, calls: res.length, called: res.length || regToday || lostToday ? 'Yes' : 'No',
+            achieved_by: res.length ? 'Call' : regToday ? 'Registered today' : lostToday ? 'Closed Lost today' : '',
+            connected: res.some((v) => NREACH.indexOf(v) < 0 && v !== 'Disconnected') ? 'Yes' : 'No',
+            new_status: f && rank(f) < rank(x.status) ? UP[f] || f : '', closed_lost: f === 'Closed Lost' && x.status !== 'Closed Lost' ? 'Yes' : 'No',
+            from_hot: x.pr <= 2 ? 'Yes' : 'No', report_date: RD
+          });
+        });
+      });
+      return out;
+    }
+  });
+
+  dash.calc('priority_by_exec', {
+    title: 'Priority target vs achievement',
+    description: 'Morning priority leads per executive: target, called, connected, P1–P4 split, effectiveness; absent = no logged calls that day.',
+    inputs: ['priority_leads', 'calls'],
+    fn: (priority_leads, calls) => {
+      const EX = { '0058Z000008aD6JQAU': 'Roji Ganguly', '0058Z000008aD6TQAU': 'Mahuya Das', '0058Z000008aDo6QAE': 'Sangita Biswas', '0058Z000008aD4wQAE': 'Rima Debnath', '0058Z000008aD6dQAE': 'Tania Banerjee' };
+      const n = {}, seen = {};
+      calls.forEach((c) => { const k = c.OwnerId + '|' + c.WhoId + '|' + c.CreatedDate; if (EX[c.OwnerId] && !seen[k]) { seen[k] = 1; n[EX[c.OwnerId]] = (n[EX[c.OwnerId]] || 0) + 1; } });
+      const sum = (m, f) => m.reduce((s, x) => s + f(x), 0);
+      const row = (name, m, total, att) => {
+        const r = { executive: name, attendance: att, target: m.length, called: sum(m, (x) => x.called === 'Yes'), connected: sum(m, (x) => x.connected === 'Yes'), priority_calls: sum(m, (x) => x.calls), total_calls: total };
+        r.not_called = r.target - r.called;
+        r.achievement = r.target ? r.called / r.target : 0;
+        ['P1', 'P2', 'P3', 'P4'].forEach((p) => { const q = m.filter((x) => x.priority === p); r[p.toLowerCase() + '_target'] = q.length; r[p.toLowerCase() + '_called'] = sum(q, (x) => x.called === 'Yes'); });
+        r.new_req_qualified = sum(m, (x) => x.new_status === 'Req. Qualified');
+        r.new_semi_qualified = sum(m, (x) => x.new_status === 'Semi Qualified');
+        r.new_registered = sum(m, (x) => x.new_status === 'Registered');
+        r.moved_up_from_follow_up = sum(m, (x) => x.new_status && x.from_hot === 'No');
+        r.moved_up_from_hot = sum(m, (x) => x.new_status && x.from_hot === 'Yes');
+        r.closed_lost = sum(m, (x) => x.closed_lost === 'Yes');
+        const hot = m.filter((x) => x.from_hot === 'Yes');
+        r.hot_target = hot.length;
+        r.hot_called = sum(hot, (x) => x.called === 'Yes');
+        r.hot_connected = sum(hot, (x) => x.connected === 'Yes');
+        r.hot_not_called = r.hot_target - r.hot_called;
+        return r;
+      };
+      const out = Object.values(EX).map((e) => row(e, priority_leads.filter((x) => x.executive === e), n[e] || 0, n[e] ? 'Present' : 'Absent'));
+      const pres = out.filter((r) => r.attendance === 'Present').map((r) => r.executive);
+      out.push(row('Team (present)', priority_leads.filter((x) => pres.indexOf(x.executive) >= 0), sum(out, (r) => r.total_calls), 'Team'));
+      return out;
+    }
+  });
+
+  dash.calc('fresh_by_owner', {
+    title: 'Fresh enquiries and 5-minute SOP',
+    description: 'Fresh leads per owner over the period (each day 6:30 PM to 6:30 PM), office-hours leads called within 5 minutes, missed, not called, and overnight leads (called by 12 noon: periods of up to 14 days).',
+    inputs: ['fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_leads'],
+    fn: (fresh_all, fresh_nc, fresh_ok, fresh_leads) => {
+      // Office hours 10:00 AM–6:30 PM IST: IST hour 10–17, or IST hour 18 with UTC hour 12 (18:00–18:29).
+      const office = (r) => Number(r.hi) >= 10 && (Number(r.hi) <= 17 || (Number(r.hi) === 18 && Number(r.hu) === 12));
+      const by = {};
+      const row = (o) => (by[o || 'Unassigned'] = by[o || 'Unassigned'] || { fresh_enquiries: 0, office_hours: 0, within_5_min: 0, not_called: 0, overnight: 0 });
+      fresh_all.forEach((r) => { const o = row(r.o); const n = Number(r.n); o.fresh_enquiries += n; if (office(r)) o.office_hours += n; else o.overnight += n; });
+      fresh_ok.forEach((r) => { if (office(r)) row(r.o).within_5_min += Number(r.n); });
+      fresh_nc.forEach((r) => { if (office(r)) row(r.o).not_called += Number(r.n); });
+      // Overnight leads called by 12 noon need each lead's times: worked out only when every lead of the period loaded.
+      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      const total = fresh_all.reduce((s, r) => s + Number(r.n), 0);
+      const exact = fresh_leads.length > 0 && fresh_leads.length === total;
+      const noon = {};
+      if (exact) fresh_leads.forEach((l) => {
+        const c = ist(l.Enquiry_Date__c), hm = c.slice(11, 16);
+        if (hm >= '10:00' && hm < '18:30') return;
+        const day = hm >= '18:30' ? new Date(Date.parse(c.slice(0, 10) + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10) : c.slice(0, 10);
+        const k = l.Owner_Name || 'Unassigned';
+        noon[k] = noon[k] || 0;
+        if (l.First_Call_Date_Time__c && ist(l.First_Call_Date_Time__c).slice(0, 16) <= day + 'T12:00') noon[k] += 1;
+      });
+      const F = ['fresh_enquiries', 'office_hours', 'within_5_min', 'missed_5_min', 'not_called', 'overnight', 'overnight_called_by_noon'];
+      const out = Object.keys(by).sort((a, b) => by[b].fresh_enquiries - by[a].fresh_enquiries).map((k) => {
+        const r = { owner: k, ...by[k] };
+        r.missed_5_min = r.office_hours - r.within_5_min;
+        r.overnight_called_by_noon = exact ? noon[k] || 0 : null;
+        r.sop_met = r.office_hours ? r.within_5_min / r.office_hours : null;
+        return Object.fromEntries(['owner'].concat(F, ['sop_met']).map((f) => [f, r[f]]));
+      });
+      const t = { owner: 'Team' };
+      F.forEach((f) => { t[f] = f === 'overnight_called_by_noon' && !exact ? null : out.reduce((s, r) => s + (r[f] || 0), 0); });
+      t.sop_met = t.office_hours ? t.within_5_min / t.office_hours : null;
+      out.push(t);
+      return out;
+    }
+  });
+
+  dash.calc('fresh_missed', {
+    title: 'Fresh leads that missed 5 minutes',
+    description: 'Office-hours fresh leads (10:00 AM to 6:30 PM) not called within 5 minutes, newest first, with minutes to first call (the latest 2,000 on long periods).',
+    inputs: ['fresh_missed_rows'],
+    fn: (fresh_missed_rows) => {
+      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      return fresh_missed_rows.map((l) => {
+        const c = ist(l.Enquiry_Date__c);
+        const tat = l.TAT_of_Lead_Creation_to1st_Conn_in_min__c === null || l.TAT_of_Lead_Creation_to1st_Conn_in_min__c === undefined || !l.First_Call_Date_Time__c ? null : Math.round(Number(l.TAT_of_Lead_Creation_to1st_Conn_in_min__c));
+        return { lead_id: l.Id, owner: l.Owner_Name || 'Unassigned', client: l.Name || '', created_on: c.slice(0, 10), created_at: c.slice(11, 16), minutes_to_first_call: tat, result: tat === null ? 'Not called' : tat + ' min', source: l.Sub_source_Text__c || l.Inq_pkl_Source__c || '' };
+      });
+    }
+  });
+
+  dash.calc('calls_by_exec', {
+    title: 'Calls and connected customers',
+    description: 'Logged calls per executive over the period (distinct call times), unique leads called, and leads with a connected call result; Team is Salesforce’s own total, so a lead called by two executives counts once.',
+    inputs: ['calls_sum', 'conn_sum'],
+    fn: (calls_sum, conn_sum) => {
+      const EX = { '0058Z000008aD6JQAU': 'Roji Ganguly', '0058Z000008aD6TQAU': 'Mahuya Das', '0058Z000008aDo6QAE': 'Sangita Biswas', '0058Z000008aD4wQAE': 'Rima Debnath', '0058Z000008aD6dQAE': 'Tania Banerjee' };
+      const get = (rows, id) => rows.find((r) => (id ? r.OwnerId === id : !r.OwnerId)) || {};
+      const build = (id, name) => {
+        const c = get(calls_sum, id), k = get(conn_sum, id);
+        const r = { executive: name, total_calls: Number(c.c || 0), leads_called: Number(c.l || 0), connected_customers: Number(k.l || 0) };
+        r.connect_rate = r.leads_called ? r.connected_customers / r.leads_called : null;
+        return r;
+      };
+      const out = Object.entries(EX).map(([id, name]) => build(id, name));
+      out.push(build(null, 'Team'));
+      return out;
+    }
+  });
+
+  dash.calc('reconnect_list', {
+    title: 'Reconnect with Customer requests',
+    description: 'One row per customer who asked to reconnect in the period: latest request, lead owner and details, and whether a call was logged after that request (Missed = no call and the lead is still open).',
+    inputs: ['reconnect'],
+    fn: (reconnect) => {
+      const t = (s) => Date.parse(String(s).slice(0, 19) + 'Z');
+      const ist = (s) => new Date(t(s) + 19800000).toISOString();
+      const PROJ = (p) => (/TRIVENI MALL/i.test(p) ? 'Triveni Mall' : /TRIVENI/i.test(p) ? 'Triveni' : /SANGAM/i.test(p) ? 'Sangam' : p || '');
+      return reconnect.map((r) => {
+        const linked = !String(r.lead_id).startsWith('task:');
+        const found = linked && r.lead_status !== null && r.lead_status !== undefined;
+        const called = !!(r.last_call && t(r.last_call) > t(r.last_request));
+        const closed = r.lead_status === 'Converted' || r.lead_status === 'Closed Lost';
+        const outcome = !linked ? 'No lead linked' : !found ? 'Lead not found' : called ? 'Called back' : closed ? 'Closed, no call' : 'Missed';
+        const c = ist(r.last_request);
+        return {
+          lead_id: r.lead_id, requested_on: c.slice(0, 10), requested_at: c.slice(11, 16), client: linked ? r.client || '' : '(no lead linked)',
+          owner: (linked ? r.owner : r.task_owner) || 'Unassigned', mobile: String(r.mobile || '').replace(/\D/g, '').slice(-10), project: PROJ(r.project),
+          lead_status: r.lead_status || '', source: r.source || '', requests: Number(r.requests), outcome,
+          called_back: outcome === 'Called back' ? 'Yes' : outcome === 'Missed' || outcome === 'Closed, no call' ? 'No' : '',
+          last_call_result: r.last_result || r.last_call_result || '', days_waiting: outcome === 'Missed' ? Math.floor((Date.now() - t(r.last_request)) / 86400000) : null
+        };
+      }).sort((a, b) => (a.requested_on + a.requested_at < b.requested_on + b.requested_at ? 1 : -1));
+    }
+  });
+
+  dash.calc('reconnect_by_owner', {
+    title: 'Reconnect requests by lead owner',
+    description: 'Customers who asked to reconnect, per current lead owner: called back, missed (still open), closed without a call, and the call-back rate (called ÷ (called + missed)).',
+    inputs: ['reconnect_list'],
+    fn: (reconnect_list) => {
+      const by = {};
+      const add = (k, r) => {
+        const o = (by[k] = by[k] || { customers: 0, requests: 0, called_back: 0, missed: 0, closed_no_call: 0, no_lead: 0 });
+        o.customers += 1; o.requests += r.requests;
+        if (r.outcome === 'Called back') o.called_back += 1;
+        else if (r.outcome === 'Missed') o.missed += 1;
+        else if (r.outcome === 'Closed, no call') o.closed_no_call += 1;
+        else o.no_lead += 1;
+      };
+      reconnect_list.forEach((r) => { add(r.outcome === 'No lead linked' ? r.owner + ' (no lead linked)' : r.owner, r); add('\u0000Team', r); });
+      const rate = (o) => (o.called_back + o.missed ? o.called_back / (o.called_back + o.missed) : null);
+      const keys = Object.keys(by).filter((k) => k !== '\u0000Team').sort((a, b) => by[b].missed - by[a].missed || by[b].customers - by[a].customers);
+      return keys.concat(Object.hasOwn(by, '\u0000Team') ? ['\u0000Team'] : []).map((k) => ({ owner: k === '\u0000Team' ? 'Team' : k, ...by[k], pending: by[k].missed, call_back_rate: rate(by[k]) }));
+    }
+  });
+
+  dash.calc('attendance_log', {
+    title: 'Attendance log',
+    description: 'Each executive per day: calls logged, fresh leads allocated, and status (Present = at least one call; Allocated, no calls; Absent).',
+    inputs: ['day', 'att_calls_daily', 'att_fresh_daily'],
+    fn: (day, att_calls_daily, att_fresh_daily) => {
+      const EX = { '0058Z000008aD6JQAU': 'Roji Ganguly', '0058Z000008aD6TQAU': 'Mahuya Das', '0058Z000008aDo6QAE': 'Sangita Biswas', '0058Z000008aD4wQAE': 'Rima Debnath', '0058Z000008aD6dQAE': 'Tania Banerjee' };
+      const RD = day.length ? String(day[0].d).slice(0, 10) : '';
+      if (!RD) return [];
+      const add = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+      const dow = new Date(RD + 'T00:00:00Z').getUTCDay();
+      const mon = add(RD, -((dow + 6) % 7));
+      const first = RD.slice(0, 8) + '01';
+      const FROM = day.length && day[0].from ? String(day[0].from).slice(0, 10) : RD;
+      const start = [FROM, first, mon].sort()[0], end = add(mon, 6);
+      const C = {}, F = {};
+      att_calls_daily.forEach((r) => { C[r.OwnerId + '|' + String(r.d).slice(0, 10)] = Number(r.n); });
+      att_fresh_daily.forEach((r) => { F[r.OwnerId + '|' + String(r.d).slice(0, 10)] = Number(r.n); });
+      const through = [RD].concat(att_calls_daily.map((r) => String(r.d).slice(0, 10))).sort().pop();
+      const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const out = [];
+      for (let d = start; d <= end; d = add(d, 1)) {
+        Object.entries(EX).forEach(([id, name]) => {
+          const calls = C[id + '|' + d] || 0, fresh = F[id + '|' + d] || 0;
+          let status = calls > 0 ? 'Present' : fresh > 0 ? 'Allocated, no calls' : 'Absent';
+          if (d > through && !calls && !fresh) status = 'Upcoming';
+          out.push({ key: name + '|' + d, executive: name, date: d, weekday: WD[new Date(d + 'T00:00:00Z').getUTCDay()], calls, fresh_allocated: fresh, status, in_week: d >= mon ? 'Yes' : 'No', in_month: d.slice(0, 7) === RD.slice(0, 7) && d <= RD ? 'Yes' : 'No', in_period: FROM < RD ? (d >= FROM && d <= RD ? 'Yes' : 'No') : d.slice(0, 7) === RD.slice(0, 7) && d <= RD ? 'Yes' : 'No', is_report_day: d === RD ? 'Yes' : 'No' });
+        });
+      }
+      return out;
+    }
+  });
+
+  dash.calc('roster_week', {
+    title: 'Weekly roster',
+    description: 'Monday to Sunday of the selected week: each executive’s status per day and how many days they were present.',
+    inputs: ['attendance_log'],
+    fn: (attendance_log) => {
+      const wk = attendance_log.filter((r) => r.in_week === 'Yes');
+      const days = [...new Set(wk.map((r) => r.date))].sort();
+      const names = [...new Set(wk.map((r) => r.executive))];
+      const out = names.map((e) => {
+        const m = wk.filter((r) => r.executive === e);
+        const row = { executive: e };
+        days.forEach((d, i) => { const x = m.find((r) => r.date === d) || {}; row['d' + (i + 1)] = x.status || ''; row['d' + (i + 1) + '_calls'] = x.calls || 0; row['d' + (i + 1) + '_fresh'] = x.fresh_allocated || 0; });
+        row.days_present = m.filter((r) => r.status === 'Present').length;
+        row.days_allocated_no_calls = m.filter((r) => r.status === 'Allocated, no calls').length;
+        row.days_absent = m.filter((r) => r.status === 'Absent').length;
+        row.days_so_far = m.filter((r) => r.status !== 'Upcoming').length;
+        row.week_calls = m.reduce((s, r) => s + r.calls, 0);
+        row.week_fresh = m.reduce((s, r) => s + r.fresh_allocated, 0);
+        return row;
+      });
+      const team = { executive: 'Team present' };
+      days.forEach((d, i) => { const m = wk.filter((r) => r.date === d); team['d' + (i + 1)] = m.every((r) => r.status === 'Upcoming') ? 'Upcoming' : m.filter((r) => r.status === 'Present').length + ' of ' + m.length; team['d' + (i + 1) + '_calls'] = m.reduce((s, r) => s + r.calls, 0); team['d' + (i + 1) + '_fresh'] = m.reduce((s, r) => s + r.fresh_allocated, 0); });
+      team.days_present = out.reduce((s, r) => s + r.days_present, 0);
+      team.days_allocated_no_calls = out.reduce((s, r) => s + r.days_allocated_no_calls, 0);
+      team.days_absent = out.reduce((s, r) => s + r.days_absent, 0);
+      team.days_so_far = out.reduce((s, r) => s + r.days_so_far, 0);
+      team.week_calls = out.reduce((s, r) => s + r.week_calls, 0);
+      team.week_fresh = out.reduce((s, r) => s + r.week_fresh, 0);
+      out.push(team);
+      return out;
+    }
+  });
+
+  dash.calc('attendance_month', {
+    title: 'Attendance over the period',
+    description: 'From the From date to the To date (a single day shows the month so far): days present, days allocated with no calls, days absent, and attendance rate.',
+    inputs: ['attendance_log'],
+    fn: (attendance_log) => {
+      const m = attendance_log.filter((r) => r.in_period === 'Yes');
+      const names = [...new Set(m.map((r) => r.executive))];
+      const row = (e, rows) => {
+        const r = { executive: e, days: rows.length, present: rows.filter((x) => x.status === 'Present').length, allocated_no_calls: rows.filter((x) => x.status === 'Allocated, no calls').length, absent: rows.filter((x) => x.status === 'Absent').length, calls: rows.reduce((s, x) => s + x.calls, 0), fresh_allocated: rows.reduce((s, x) => s + x.fresh_allocated, 0) };
+        r.attendance_rate = r.days ? r.present / r.days : null;
+        return r;
+      };
+      const out = names.map((e) => row(e, m.filter((r) => r.executive === e)));
+      out.push(row('Team', m));
+      return out;
+    }
+  });
+
+  dash.calc('attendance_today', {
+    title: 'Attendance on the report day',
+    description: 'Each executive on the selected day: status, calls logged and fresh leads allocated; the Team row counts who was present.',
+    inputs: ['attendance_log'],
+    fn: (attendance_log) => {
+      const t = attendance_log.filter((r) => r.is_report_day === 'Yes');
+      const out = t.map((r) => ({ executive: r.executive, status: r.status, calls: r.calls, fresh_allocated: r.fresh_allocated, note: r.status === 'Allocated, no calls' ? 'Fresh leads were assigned but no call was logged' : r.status === 'Absent' ? 'No calls and no fresh leads' : '' }));
+      out.push({ executive: 'Team', status: t.filter((r) => r.status === 'Present').length + ' of ' + t.length + ' present', calls: t.reduce((s, r) => s + r.calls, 0), fresh_allocated: t.reduce((s, r) => s + r.fresh_allocated, 0), present: t.filter((r) => r.status === 'Present').length, absent: t.filter((r) => r.status !== 'Present').length, flagged: t.filter((r) => r.status === 'Allocated, no calls').length, note: '' });
+      return out;
+    }
+  });
+
+  dash.calc('team_directory', {
+    title: 'Team directory',
+    description: 'Each team member’s years with Alcove, next birthday and next work anniversary, counted from the report date.',
+    inputs: ['day', 'team'],
+    fn: (day, team) => {
+      const RD = day.length ? String(day[0].d).slice(0, 10) : '';
+      const t0 = Date.parse(RD + 'T00:00:00Z');
+      const next = (d) => {
+        if (!d || !RD) return null;
+        let y = Number(RD.slice(0, 4));
+        let n = y + d.slice(4);
+        if (n < RD) n = (y + 1) + d.slice(4);
+        return n;
+      };
+      return team.map((m) => {
+        const joined = m.joined || '', bday = m.birthday || '';
+        let years = null, tenure = 'Not given';
+        if (joined && RD) {
+          if (joined > RD) tenure = 'Joins ' + joined;
+          else {
+            let mo = (Number(RD.slice(0, 4)) - Number(joined.slice(0, 4))) * 12 + (Number(RD.slice(5, 7)) - Number(joined.slice(5, 7)));
+            if (Number(RD.slice(8, 10)) < Number(joined.slice(8, 10))) mo -= 1;
+            years = mo / 12;
+            tenure = Math.floor(mo / 12) + ' yr ' + (mo % 12) + ' mo';
+          }
+        }
+        const nb = next(bday), na = joined && joined <= RD ? next(joined) : null;
+        return {
+          name: m.name, role: m.role, joined, tenure, years_with_alcove: years, birthday: bday ? bday.slice(5) : '',
+          next_birthday: nb || '', days_to_birthday: nb ? Math.round((Date.parse(nb + 'T00:00:00Z') - t0) / 86400000) : null,
+          next_anniversary: na || '', days_to_anniversary: na ? Math.round((Date.parse(na + 'T00:00:00Z') - t0) / 86400000) : null,
+          anniversary_years: na ? Number(na.slice(0, 4)) - Number(joined.slice(0, 4)) : null, whatsapp: m.whatsapp
+        };
+      });
+    }
+  });
+
+  dash.calc('kpis', {
+    title: 'Headline figures',
+    description: 'Team totals for the day (priority figures cover present executives only).',
+    inputs: ['priority_by_exec', 'fresh_by_owner', 'calls_by_exec', 'reconnect_list'],
+    fn: (priority_by_exec, fresh_by_owner, calls_by_exec, reconnect_list) => {
+      const p = priority_by_exec.find((r) => r.executive === 'Team (present)') || {};
+      const f = fresh_by_owner.find((r) => r.owner === 'Team') || {};
+      const c = calls_by_exec.find((r) => r.executive === 'Team') || {};
+      const rcl = reconnect_list.filter((r) => r.outcome !== 'No lead linked');
+      const rcn = (o) => rcl.filter((r) => r.outcome === o).length;
+      return [{
+        priority_target: p.target || 0, priority_called: p.called || 0, priority_pct: p.target ? p.called / p.target : null, priority_calls: p.priority_calls || 0,
+        fresh_enquiries: f.fresh_enquiries || 0, office_hours_fresh: f.office_hours || 0, missed_5min: f.missed_5_min || 0, sop_pct: f.office_hours ? f.within_5_min / f.office_hours : null,
+        connected_customers: c.connected_customers || 0, leads_called: c.leads_called || 0, total_calls: c.total_calls || 0,
+        reconnect_requests: rcl.length, reconnect_tasks: rcl.reduce((s, r) => s + r.requests, 0),
+        reconnect_pending: rcn('Missed'), reconnect_called_back: rcn('Called back'), reconnect_closed: rcn('Closed, no call'),
+        reconnect_no_lead: reconnect_list.filter((r) => r.outcome === 'No lead linked').length,
+        reconnect_rate: rcn('Called back') + rcn('Missed') ? rcn('Called back') / (rcn('Called back') + rcn('Missed')) : null,
+        hot_not_called: p.hot_not_called || 0, priority_connected: p.connected || 0,
+        within_5min: f.within_5_min || 0, overnight: f.overnight || 0, overnight_by_noon: f.overnight_called_by_noon === undefined ? 0 : f.overnight_called_by_noon,
+        absent: priority_by_exec.filter((r) => r.attendance === 'Absent').map((r) => r.executive).join(', ')
+      }];
+    }
+  });
+
+  dash.calc('insights', {
+    title: 'Insights for the day',
+    description: 'Plain-language highlights worked out from the day’s figures.',
+    inputs: ['priority_by_exec', 'fresh_by_owner', 'calls_by_exec', 'reconnect_list'],
+    fn: (priority_by_exec, fresh_by_owner, calls_by_exec, reconnect_list) => {
+      const pct = (x) => Math.round(x * 100) + '%';
+      const out = [];
+      const pres = priority_by_exec.filter((r) => r.attendance === 'Present' && r.target);
+      const absent = priority_by_exec.filter((r) => r.attendance === 'Absent');
+      if (pres.length) {
+        const best = pres.slice().sort((a, b) => b.achievement - a.achievement)[0];
+        const low = pres.slice().sort((a, b) => a.achievement - b.achievement)[0];
+        out.push(best.executive + ' covered the most of their priority list: ' + best.called + ' of ' + best.target + ' (' + pct(best.achievement) + ').');
+        if (low.executive !== best.executive) out.push(low.executive + ' covered the least: ' + low.called + ' of ' + low.target + ' (' + pct(low.achievement) + '), with ' + (low.hot_target - low.hot_called) + ' hot leads not called.');
+      }
+      if (absent.length) out.push('Absent (no logged calls): ' + absent.map((r) => r.executive + ' (' + r.target + ' priority leads waiting)').join(', ') + '.');
+      const team = priority_by_exec.find((r) => r.executive === 'Team (present)');
+      if (team) out.push('Status moved up on ' + (team.new_req_qualified + team.new_semi_qualified + team.new_registered) + ' priority leads (' + team.new_registered + ' registered); ' + team.closed_lost + ' went Closed Lost.');
+      const f = fresh_by_owner.filter((r) => r.owner !== 'Team' && r.office_hours);
+      if (f.length) {
+        const worst = f.slice().sort((a, b) => b.missed_5_min - a.missed_5_min)[0];
+        if (worst.missed_5_min) out.push(worst.owner + ' had the most fresh leads miss the 5-minute call: ' + worst.missed_5_min + ' of ' + worst.office_hours + ' in office hours.');
+        else out.push('Every office-hours fresh lead was called within 5 minutes.');
+      }
+      const c = calls_by_exec.filter((r) => r.executive !== 'Team' && r.total_calls).sort((a, b) => b.total_calls - a.total_calls)[0];
+      if (c) out.push(c.executive + ' made the most calls (' + c.total_calls + '), connecting with ' + c.connected_customers + ' customers.');
+      const rl = reconnect_list.filter((r) => r.outcome !== 'No lead linked');
+      const pend = rl.filter((r) => r.outcome === 'Missed');
+      if (rl.length) {
+        const worst = Object.entries(pend.reduce((m, r) => { m[r.owner] = (m[r.owner] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1])[0];
+        out.push(pend.length ? pend.length + ' of ' + rl.length + ' customers who asked to reconnect are still waiting for a call' + (worst ? ' (most with ' + worst[0] + ': ' + worst[1] + ').' : '.') : 'All ' + rl.length + ' customers who asked to reconnect were called back or are closed.');
+      }
+      return out.map((text, i) => ({ n: i + 1, text }));
+    }
+  });
+</script>
+
+<script>
+  const fmtN = d3.format(',');
+  const fmtP = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : d3.format('.0%')(v));
+  const fmtDay = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const hm12 = (s) => { if (!s) return ''; const [h, m] = String(s).split(':').map(Number); return ((h + 11) % 12 + 1) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' AM' : ' PM'); };
+  const st = (id) => dash.data(id);
+  const okRows = (id) => { const d = st(id); return d.status === 'ok' && Array.isArray(d.data) ? d.data : null; };
+  const failed = (id) => ['error', 'connect', 'declined', 'missing'].indexOf(st(id).status) >= 0;
+  const fail = (el) => { el.replaceChildren(); const p = document.createElement('div'); p.className = 'ps-fail'; p.textContent = 'Failed to load'; el.appendChild(p); };
+
+  // Task menu: one screen at a time.
+  const SCREENS = ['overview', 'task1', 'task2', 'task3', 'task4', 'team'];
+  let current = SCREENS.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'overview';
+  const show = (id) => {
+    current = id;
+    document.querySelectorAll('.ps-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.screen === id)));
+    SCREENS.forEach((s) => { document.getElementById(s).hidden = s !== id; });
+    dash.setLink(id);
+    draw();
+  };
+  document.querySelectorAll('.ps-tab').forEach((b) => b.addEventListener('click', () => show(b.dataset.screen)));
+
+  // Date controls
+  const fin = document.querySelector('.ps-from'), tin = document.querySelector('.ps-to');
+  const MIN = window.psStart;
+  const cur = () => { const p = dash.params(); return { from: p.from || p.date, to: p.to || p.date }; };
+  // A period: From on or before To, both between 1 Oct 2025 and today.
+  const go = (from, to, all) => {
+    const T = window.psToday();
+    if (!from || !to || from < MIN || to > T) return;
+    if (from > to) [from, to] = [to, from];
+    dash.setParams(window.psBuildParams(from, to, !!all));
+  };
+  fin.addEventListener('change', () => { if (fin.value && fin.validity.valid) { const c = cur(); go(fin.value, fin.value > c.to ? fin.value : c.to); } });
+  tin.addEventListener('change', () => { if (tin.value && tin.validity.valid) { const c = cur(); go(tin.value < c.from ? tin.value : c.from, tin.value); } });
+  fin.addEventListener('blur', () => { fin.value = cur().from || ''; });
+  tin.addEventListener('blur', () => { tin.value = cur().to || ''; });
+  // ‹ › move the whole period back or forward by its own length.
+  const step = (dir) => {
+    const c = cur(), n = window.psDays(c.from, c.to);
+    let f = window.psShift(c.from, dir * n), t = window.psShift(c.to, dir * n);
+    if (f < MIN) { f = MIN; t = window.psShift(MIN, n - 1); }
+    if (t > window.psToday()) { t = window.psToday(); f = window.psShift(t, -(n - 1)) < MIN ? MIN : window.psShift(t, -(n - 1)); }
+    go(f, t);
+  };
+  document.querySelector('.ps-prev').addEventListener('click', () => step(-1));
+  document.querySelector('.ps-next').addEventListener('click', () => step(1));
+  document.querySelector('.ps-today').addEventListener('click', () => go(window.psToday(), window.psToday()));
+  document.querySelector('.ps-all').addEventListener('click', () => go(MIN, window.psToday(), true));
+
+  const chip = (td, text, cls) => { td.replaceChildren(); const s = document.createElement('span'); s.className = 'ps-chip ' + cls; s.textContent = text; td.appendChild(s); };
+
+  // Generic table: cols = [{f, label, fmt, cls, chip}]
+  const table = (el, id, cols, rows, opts = {}) => {
+    el.replaceChildren();
+    if (failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
+    const head = el.createTHead().insertRow();
+    cols.forEach((c) => { const th = document.createElement('th'); th.textContent = c.label; th.dataset.field = c.f; if (c.cls) th.className = c.cls; head.appendChild(th); });
+    const tb = el.createTBody();
+    if (!rows) return;
+    if (!rows.length && opts.empty) { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; td.className = 'l'; td.textContent = opts.empty; return; }
+    rows.forEach((r) => {
+      const tr = tb.insertRow();
+      if (opts.key) tr.dataset.key = r[opts.key];
+      if (opts.rowClass) tr.className = opts.rowClass(r);
+      cols.forEach((c) => {
+        const td = tr.insertCell();
+        if (c.cls) td.className = c.cls;
+        const v = r[c.f];
+        const text = c.fmt ? c.fmt(v, r) : v === null || v === undefined || v === '' ? '—' : String(v);
+        if (c.chip) chip(td, text, c.chip(v, r)); else td.textContent = text;
+      });
+    });
+  };
+
+  const tip = document.createElement('div');
+  tip.className = 'ps-tip';
+  tip.hidden = true;
+  const showTip = (box, ev, lines) => {
+    tip.hidden = false;
+    tip.replaceChildren();
+    lines.forEach((t, i) => { const d = document.createElement('div'); if (i === 0) d.className = 'd'; d.textContent = t; tip.appendChild(d); });
+    if (tip.parentNode !== box) box.appendChild(tip);
+    const [mx, my] = d3.pointer(ev, box);
+    tip.style.left = Math.max(4, Math.min(mx + 12, box.clientWidth - tip.offsetWidth - 4)) + 'px';
+    tip.style.top = my + 14 + 'px';
+  };
+
+  // Horizontal bars: rows [{label, a, b, muted}] drawn as a (accent) + b (second colour) stacked.
+  const bars = (box, rows, colA, colB, tipFn, endFn) => {
+    box.replaceChildren();
+    if (!rows || !rows.length) return;
+    const W = Math.max(280, box.clientWidth), rowH = 34, H = rows.length * rowH + 8;
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const probe = svg.append('text').attr('font-size', 12);
+    let lw = 0, ew = 0;
+    rows.forEach((d) => { probe.text(d.label); lw = Math.max(lw, probe.node().getComputedTextLength()); probe.text(endFn(d)); ew = Math.max(ew, probe.node().getComputedTextLength()); });
+    probe.remove();
+    const left = lw + 14, right = ew + 14;
+    const x = d3.scaleLinear([0, d3.max(rows, (d) => d.a + d.b) || 1], [left, W - right]);
+    const g = svg.selectAll('g.r').data(rows).join('g').attr('class', 'r').attr('transform', (d, i) => `translate(0,${i * rowH + 4})`).style('cursor', 'default');
+    g.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH - 4).attr('fill', 'transparent');
+    g.append('text').attr('x', 0).attr('y', 18).attr('font-size', 12).attr('fill', (d) => (d.muted ? 'var(--color-fg-muted)' : 'var(--color-fg)')).text((d) => d.label);
+    g.append('rect').attr('x', left).attr('y', 6).attr('height', 18).attr('rx', 5).attr('width', (d) => Math.max(0, x(d.a + d.b) - left)).attr('fill', colB);
+    g.append('rect').attr('x', left).attr('y', 6).attr('height', 18).attr('rx', 5).attr('width', (d) => Math.max(0, x(d.a) - left)).attr('fill', colA);
+    g.append('text').attr('x', (d) => x(d.a + d.b) + 8).attr('y', 19).attr('font-size', 12).attr('font-weight', 600).attr('fill', 'var(--color-fg-muted)').text(endFn);
+    g.on('mousemove', (ev, d) => showTip(box, ev, tipFn(d))).on('mouseleave', () => { tip.hidden = true; });
+  };
+
+  const setKpis = () => {
+    document.querySelectorAll('[data-source="kpis"]').forEach((el) => {
+      const k = okRows('kpis');
+      const v = k && k[0] ? k[0][el.dataset.field] : undefined;
+      el.textContent = !k ? '—' : /_pct$|_rate$/.test(el.dataset.field) ? fmtP(v) : v === null || v === undefined ? '—' : fmtN(v);
+    });
+    // Single-cell marks picked by data-where (e.g. owner=Team) outside tables.
+    document.querySelectorAll('[data-source][data-where][data-field]').forEach((el) => {
+      if (el.closest('table')) return;
+      const rows = okRows(el.dataset.source);
+      const [col, val] = el.dataset.where.split('=').map(decodeURIComponent);
+      const row = rows ? rows.find((r) => String(r[col]) === val) : null;
+      const v = row ? row[el.dataset.field] : undefined;
+      el.textContent = !row || v === null ? '—' : /sop_met|_rate$|_pct$/.test(el.dataset.field) ? fmtP(v) : fmtN(v || 0);
+    });
+  };
+
+  const STATUS_CHIP = { 'Present': 'good', 'Allocated, no calls': 'warn', 'Absent': 'bad', 'Upcoming': 'muted' };
+  const SHORT = { 'Present': 'Present', 'Allocated, no calls': 'Allocated', 'Absent': 'Absent', 'Upcoming': '·' };
+  const roster = (el, rows) => {
+    el.replaceChildren();
+    if (failed('roster_week')) { const td = el.createTBody().insertRow().insertCell(); td.colSpan = 11; fail(td); return; }
+    const D = dash.params().date;
+    const dow = new Date(D + 'T00:00:00Z').getUTCDay();
+    const mon = window.psShift(D, -((dow + 6) % 7));
+    const head = el.createTHead().insertRow();
+    const th = (t, f, cls) => { const h = document.createElement('th'); h.textContent = t; h.dataset.field = f; if (cls) h.className = cls; head.appendChild(h); };
+    th('Executive', 'executive');
+    for (let i = 0; i < 7; i++) { const d = window.psShift(mon, i); th(new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }), 'd' + (i + 1), 'cell'); }
+    th('Days present', 'days_present'); th('Allocated, no calls', 'days_allocated_no_calls'); th('Absent', 'days_absent'); th('Calls this week', 'week_calls');
+    const tb = el.createTBody();
+    (rows || []).forEach((r) => {
+      const tr = tb.insertRow();
+      if (r.executive === 'Team present') tr.className = 'team';
+      tr.insertCell().textContent = r.executive;
+      for (let i = 1; i <= 7; i++) {
+        const td = tr.insertCell(); td.className = 'cell';
+        const s = r['d' + i];
+        if (r.executive === 'Team present') td.textContent = s || '—';
+        else chip(td, SHORT[s] || '—', STATUS_CHIP[s] || 'muted');
+        if (s && s !== 'Upcoming') { const sub = document.createElement('span'); sub.className = 'sub'; sub.textContent = fmtN(r['d' + i + '_calls']) + ' calls · ' + fmtN(r['d' + i + '_fresh']) + ' fresh'; td.appendChild(sub); }
+      }
+      [['days_present', (v) => fmtN(v)], ['days_allocated_no_calls', (v) => fmtN(v)], ['days_absent', (v) => fmtN(v)], ['week_calls', (v) => fmtN(v)]].forEach(([f, fm]) => { tr.insertCell().textContent = fm(r[f]); });
+    });
+  };
+
+  function draw() {
+    const D = dash.params().date || '';
+    const { from: F, to: T } = cur();
+    const T0 = window.psToday();
+    if (fin !== document.activeElement) { fin.value = F || ''; fin.max = T0; }
+    if (tin !== document.activeElement) { tin.value = T || ''; tin.max = T0; }
+    const single = F === T, all = !!dash.params().all;
+    const label = !F ? '—' : all ? 'All time (' + dfull(F) + ' – ' + dfull(T) + ')' : single ? fmtDay(T) : dfull(F) + ' – ' + dfull(T) + ' (' + window.psDays(F, T) + ' days)';
+    document.querySelectorAll('.ps-day').forEach((el) => { el.textContent = label; });
+    document.querySelectorAll('.ps-today-label').forEach((el) => { el.textContent = T ? fmtDay(T) : '—'; });
+    document.querySelector('.ps-daynote').hidden = single;
+    document.querySelector('.ps-period-h').textContent = single ? 'This month so far' : 'Over the period, ' + dfull(F) + ' – ' + dfull(T);
+    document.querySelector('.ps-period-k').textContent = single ? 'Attendance this month' : 'Attendance over the period';
+    document.querySelector('.ps-next').disabled = !T || T >= T0;
+    document.querySelector('.ps-prev').disabled = !F || F <= MIN;
+    document.querySelector('.ps-all').setAttribute('aria-pressed', String(all));
+    document.querySelector('.ps-today').setAttribute('aria-pressed', String(single && T === T0));
+    setKpis();
+
+    if (current === 'overview') {
+      const ol = document.querySelector('.ps-ins');
+      ol.replaceChildren();
+      if (failed('insights')) fail(ol);
+      (okRows('insights') || []).forEach((r, i) => { const li = document.createElement('li'); li.dataset.source = 'insights'; li.dataset.row = String(i); li.dataset.field = 'text'; const s = document.createElement('span'); s.textContent = r.text; li.appendChild(s); ol.appendChild(li); });
+      const cb = okRows('calls_by_exec');
+      const best = cb ? Math.max(...cb.filter((r) => r.executive !== 'Team').map((r) => r.connected_customers)) : -1;
+      table(document.getElementById('calls-table'), 'calls_by_exec', [
+        { f: 'executive', label: 'Executive' },
+        { f: 'total_calls', label: 'Calls made', fmt: (v) => fmtN(v) },
+        { f: 'leads_called', label: 'Leads called', fmt: (v) => fmtN(v) },
+        { f: 'connected_customers', label: 'Connected customers', fmt: (v) => fmtN(v) },
+        { f: 'connect_rate', label: 'Connect rate', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.3 ? 'good' : v >= 0.15 ? 'warn' : 'bad') }
+      ], cb, { rowClass: (r) => (r.executive === 'Team' ? 'team' : !r.total_calls ? 'absent' : r.connected_customers === best && best > 0 ? 'top' : '') });
+    }
+
+    if (current === 'task1') {
+      const fb = okRows('fresh_by_owner');
+      const box = document.getElementById('sop-chart');
+      if (failed('fresh_by_owner')) fail(box);
+      else bars(box, fb && fb.filter((r) => r.owner !== 'Team' && r.office_hours).map((r) => ({ label: r.owner, a: r.within_5_min, b: r.missed_5_min, r })), 'var(--good)', 'var(--t1)',
+        (d) => [d.label, `Within 5 min: ${fmtN(d.a)}`, `Missed: ${fmtN(d.b)}`, `SOP met: ${fmtP(d.r.sop_met)}`], (d) => fmtP(d.r.sop_met));
+      table(document.getElementById('fresh-table'), 'fresh_by_owner', [
+        { f: 'owner', label: 'Lead owner' },
+        { f: 'fresh_enquiries', label: 'Fresh', fmt: (v) => fmtN(v) },
+        { f: 'office_hours', label: 'Office hours', fmt: (v) => fmtN(v) },
+        { f: 'within_5_min', label: 'Within 5 min', fmt: (v) => fmtN(v) },
+        { f: 'missed_5_min', label: 'Missed 5 min', fmt: (v) => fmtN(v) },
+        { f: 'not_called', label: 'Not called', fmt: (v) => fmtN(v) },
+        { f: 'sop_met', label: 'SOP met', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.9 ? 'good' : v >= 0.7 ? 'warn' : 'bad') },
+        { f: 'overnight', label: 'Overnight', fmt: (v) => fmtN(v) },
+        { f: 'overnight_called_by_noon', label: 'Called by noon', fmt: (v) => (v === null ? '—' : fmtN(v)) }
+      ], fb, { rowClass: (r) => (r.owner === 'Team' ? 'team' : ''), empty: 'No fresh enquiries in this period.' });
+      const fm = okRows('fresh_missed');
+      table(document.getElementById('missed-table'), 'fresh_missed', [
+        { f: 'owner', label: 'Lead owner', cls: 'l' },
+        { f: 'client', label: 'Client', cls: 'l' },
+        { f: 'created_on', label: 'Date', cls: 'l', fmt: (v) => (v ? dfull(v) : '—') },
+        { f: 'created_at', label: 'Created', cls: 'l' },
+        { f: 'result', label: 'First call', cls: 'l', chip: (v) => (v === 'Not called' ? 'bad' : 'warn') },
+        { f: 'source', label: 'Source', cls: 'l' }
+      ], fm, { key: 'lead_id', empty: 'No office-hours fresh lead missed the 5-minute call.' });
+      const fmNote = document.querySelector('.ps-fm-note');
+      fmNote.textContent = fm && fm.length >= 2000 ? 'Showing the latest 2,000. The owner totals above count every lead in the period.' : 'Office-hours fresh leads with no first call, or a first call after 5 minutes. Newest first.';
+    }
+
+    if (current === 'task2') {
+      table(document.getElementById('reconnect-owner-table'), 'reconnect_by_owner', [
+        { f: 'owner', label: 'Lead owner' },
+        { f: 'customers', label: 'Customers', fmt: (v) => fmtN(v) },
+        { f: 'requests', label: 'Requests', fmt: (v) => fmtN(v) },
+        { f: 'called_back', label: 'Called back', fmt: (v) => fmtN(v) },
+        { f: 'missed', label: 'Missed', fmt: (v) => fmtN(v), chip: (v) => (v > 0 ? 'bad' : 'muted') },
+        { f: 'closed_no_call', label: 'Closed, no call', fmt: (v) => fmtN(v) },
+        { f: 'call_back_rate', label: 'Call-back rate', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.95 ? 'good' : v >= 0.8 ? 'warn' : 'bad') }
+      ], okRows('reconnect_by_owner'), { rowClass: (r) => (r.owner === 'Team' ? 'team' : / \(no lead linked\)$/.test(r.owner) ? 'absent' : ''), empty: 'No Reconnect with Customer requests in this period.' });
+      const when = (v, r) => (v ? dfull(v) + ', ' + hm12(r.requested_at) : '—');
+      const rcCols = [
+        { f: 'requested_on', label: 'Latest request', cls: 'l', fmt: when },
+        { f: 'client', label: 'Customer', cls: 'l' },
+        { f: 'mobile', label: 'Mobile', cls: 'l' },
+        { f: 'owner', label: 'Lead owner', cls: 'l' },
+        { f: 'project', label: 'Project', cls: 'l' },
+        { f: 'lead_status', label: 'Status', cls: 'l' },
+        { f: 'source', label: 'Source', cls: 'l' },
+        { f: 'requests', label: 'Requests', fmt: (v) => fmtN(v) },
+        { f: 'last_call_result', label: 'Last call result', cls: 'l' }
+      ];
+      const rl = okRows('reconnect_list');
+      const missed = rl && rl.filter((r) => r.outcome === 'Missed').sort((a, b) => (a.owner < b.owner ? -1 : a.owner > b.owner ? 1 : a.requested_on + a.requested_at < b.requested_on + b.requested_at ? 1 : -1));
+      table(document.getElementById('reconnect-missed-table'), 'reconnect_list', rcCols.concat([{ f: 'days_waiting', label: 'Days waiting', fmt: (v) => fmtN(v), chip: (v) => (v >= 7 ? 'bad' : 'warn') }]), missed, { key: 'lead_id', empty: 'Nobody is waiting: every open customer who asked was called back.' });
+      const OUT = { 'Called back': 'good', 'Missed': 'bad', 'Closed, no call': 'muted', 'No lead linked': 'muted', 'Lead not found': 'muted' };
+      table(document.getElementById('reconnect-table'), 'reconnect_list', rcCols.concat([{ f: 'outcome', label: 'Outcome', cls: 'l', chip: (v) => OUT[v] || 'muted' }]), rl && rl.slice(0, 1000), { key: 'lead_id', empty: 'No Reconnect with Customer requests in this period.' });
+      document.querySelector('.ps-rc-note').textContent = rl && rl.length > 1000 ? 'Latest request first. Showing the latest 1,000 of ' + fmtN(rl.length) + ' customers; Export has them all.' : 'Latest request first.';
+    }
+
+    if (current === 'task3') {
+      const pr = okRows('priority_by_exec');
+      const rc = (r) => (r.attendance === 'Team' ? 'team' : r.attendance === 'Absent' ? 'absent' : '');
+      const box = document.getElementById('priority-chart');
+      if (failed('priority_by_exec')) fail(box);
+      else bars(box, pr && pr.filter((r) => r.attendance !== 'Team').map((r) => ({ label: r.executive, a: r.called, b: r.not_called, muted: r.attendance === 'Absent', r })), 'var(--t3)', 'var(--cds-chart-muted)',
+        (d) => [d.label, d.muted ? 'Absent (no logged calls)' : `Called ${fmtN(d.a)} of ${fmtN(d.a + d.b)} (${fmtP(d.r.achievement)})`, `Connected: ${fmtN(d.r.connected)}`], (d) => (d.muted ? 'Absent' : fmtP(d.r.achievement)));
+      const pf = (p) => (v, r) => (r.attendance === 'Absent' ? '—' : `${fmtN(r[p + '_called'])}/${fmtN(r[p + '_target'])}`);
+      table(document.getElementById('priority-table'), 'priority_by_exec', [
+        { f: 'executive', label: 'Executive' },
+        { f: 'attendance', label: 'Attendance', cls: 'l', chip: (v) => (v === 'Present' ? 'good' : v === 'Absent' ? 'bad' : 'muted') },
+        { f: 'target', label: 'Target', fmt: (v) => fmtN(v) },
+        { f: 'p1_target', label: 'P1', fmt: pf('p1') },
+        { f: 'p2_target', label: 'P2', fmt: pf('p2') },
+        { f: 'p3_target', label: 'P3', fmt: pf('p3') },
+        { f: 'p4_target', label: 'P4', fmt: pf('p4') },
+        { f: 'called', label: 'Called', fmt: (v, r) => (r.attendance === 'Absent' ? '—' : fmtN(v)) },
+        { f: 'not_called', label: 'Not called', fmt: (v, r) => (r.attendance === 'Absent' ? '—' : fmtN(v)) },
+        { f: 'achievement', label: 'Achievement', fmt: (v, r) => (r.attendance === 'Absent' ? 'Absent' : fmtP(v)), chip: (v, r) => (r.attendance === 'Absent' ? 'muted' : v >= 0.7 ? 'good' : v >= 0.4 ? 'warn' : 'bad') },
+        { f: 'connected', label: 'Connected', fmt: (v, r) => (r.attendance === 'Absent' ? '—' : fmtN(v)) },
+        { f: 'priority_calls', label: 'Calls on these leads', fmt: (v) => fmtN(v) }
+      ], pr, { rowClass: rc });
+      table(document.getElementById('effect-table'), 'priority_by_exec', [
+        { f: 'executive', label: 'Executive' },
+        { f: 'new_req_qualified', label: 'New Req. Q', fmt: (v) => fmtN(v) },
+        { f: 'new_semi_qualified', label: 'New Semi Q', fmt: (v) => fmtN(v) },
+        { f: 'new_registered', label: 'New Reg.', fmt: (v) => fmtN(v), chip: (v) => (v > 0 ? 'good' : 'muted') },
+        { f: 'closed_lost', label: 'Lost', fmt: (v) => fmtN(v), chip: (v) => (v > 0 ? 'bad' : 'muted') },
+        { f: 'hot_called', label: 'Hot reconnected', fmt: (v, r) => `${fmtN(v)}/${fmtN(r.hot_target)}` }
+      ], pr && pr.filter((r) => r.attendance !== 'Absent'), { rowClass: rc });
+      const present = pr ? pr.filter((r) => r.attendance === 'Present').map((r) => r.executive) : [];
+      const pl = okRows('priority_leads');
+      table(document.getElementById('hot-table'), 'priority_leads', [
+        { f: 'executive', label: 'Executive', cls: 'l' },
+        { f: 'client', label: 'Client', cls: 'l' },
+        { f: 'sub_priority', label: 'Priority', cls: 'l', chip: (v) => (String(v).startsWith('P1') ? 'bad' : 'warn') },
+        { f: 'morning_status', label: 'Status', cls: 'l' },
+        { f: 'days_overdue', label: 'Days overdue', fmt: (v) => fmtN(v) }
+      ], pl && pl.filter((r) => (r.priority === 'P1' || r.priority === 'P2') && r.called === 'No' && present.indexOf(r.executive) >= 0), { key: 'lead_id', empty: 'Every hot lead of the present executives was called.' });
+    }
+  }
+
+  function drawAttendance() {
+    if (current !== 'task4') return;
+    table(document.getElementById('att-day-table'), 'attendance_today', [
+      { f: 'executive', label: 'Executive' },
+      { f: 'status', label: 'Status', cls: 'l', chip: (v, r) => (r.executive === 'Team' ? 'muted' : STATUS_CHIP[v] || 'muted') },
+      { f: 'calls', label: 'Calls logged', fmt: (v) => fmtN(v) },
+      { f: 'fresh_allocated', label: 'Fresh leads allocated', fmt: (v) => fmtN(v) },
+      { f: 'note', label: 'Note', cls: 'l' }
+    ], okRows('attendance_today'), { rowClass: (r) => (r.executive === 'Team' ? 'team' : r.status === 'Present' ? '' : 'absent') });
+    roster(document.getElementById('roster-table'), okRows('roster_week'));
+    table(document.getElementById('att-month-table'), 'attendance_month', [
+      { f: 'executive', label: 'Executive' },
+      { f: 'days', label: 'Days', fmt: (v) => fmtN(v) },
+      { f: 'present', label: 'Present', fmt: (v) => fmtN(v) },
+      { f: 'allocated_no_calls', label: 'Allocated, no calls', fmt: (v) => fmtN(v) },
+      { f: 'absent', label: 'Absent', fmt: (v) => fmtN(v) },
+      { f: 'attendance_rate', label: 'Attendance', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.85 ? 'good' : v >= 0.6 ? 'warn' : 'bad') },
+      { f: 'calls', label: 'Calls', fmt: (v) => fmtN(v) },
+      { f: 'fresh_allocated', label: 'Fresh allocated', fmt: (v) => fmtN(v) }
+    ], okRows('attendance_month'), { rowClass: (r) => (r.executive === 'Team' ? 'team' : '') });
+    const log = okRows('attendance_log');
+    table(document.getElementById('att-log-table'), 'attendance_log', [
+      { f: 'date', label: 'Date', cls: 'l', fmt: (v, r) => r.weekday + ' ' + new Date(v + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }) },
+      { f: 'executive', label: 'Executive', cls: 'l' },
+      { f: 'status', label: 'Status', cls: 'l', chip: (v) => STATUS_CHIP[v] || 'muted' },
+      { f: 'calls', label: 'Calls', fmt: (v) => fmtN(v) },
+      { f: 'fresh_allocated', label: 'Fresh allocated', fmt: (v) => fmtN(v) }
+    ], log && log.filter((r) => r.status !== 'Upcoming').slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.executive < b.executive ? -1 : 1)), { key: 'key' });
+  }
+
+  const dm = (d) => new Date('2000-' + d + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const dfull = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const inDays = (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : 'in ' + n + ' days');
+
+  function drawTeam() {
+    const rows = okRows('team_directory');
+    const nb = document.querySelector('.ps-next-bday');
+    const events = [];
+    (rows || []).forEach((r) => {
+      if (r.days_to_birthday !== null && r.days_to_birthday <= 60) events.push({ kind: 'Birthday', name: r.name, date: r.next_birthday, days: r.days_to_birthday });
+      if (r.days_to_anniversary !== null && r.days_to_anniversary <= 60) events.push({ kind: r.anniversary_years + '-year work anniversary', name: r.name, date: r.next_anniversary, days: r.days_to_anniversary });
+    });
+    events.sort((a, b) => a.days - b.days);
+    const firstB = events.find((e) => e.kind === 'Birthday');
+    nb.dataset.source = 'team_directory';
+    nb.textContent = !rows ? 'Staff list, birthdays, anniversaries' : firstB ? 'Next birthday: ' + firstB.name.split(' ')[0] + ' ' + inDays(firstB.days) : 'No birthday in the next 60 days';
+    if (current !== 'team') return;
+    const box = document.getElementById('bday-cards');
+    box.replaceChildren();
+    if (failed('team_directory')) fail(box);
+    else if (rows && !events.length) { const p = document.createElement('p'); p.className = 'ps-note'; p.textContent = 'No birthdays or work anniversaries in the next 60 days.'; box.appendChild(p); }
+    events.forEach((e) => {
+      const c = document.createElement('div'); c.className = 'ps-bday' + (e.days === 0 ? ' today' : '');
+      const w = document.createElement('span'); w.className = 'w'; w.textContent = (e.kind === 'Birthday' ? '🎂 ' : '🏅 ') + e.kind;
+      const n = document.createElement('span'); n.className = 'nm'; n.textContent = e.name;
+      const d = document.createElement('span'); d.className = 'dt'; d.textContent = dfull(e.date) + ' · ' + inDays(e.days);
+      c.append(w, n, d); box.appendChild(c);
+    });
+    table(document.getElementById('team-table'), 'team_directory', [
+      { f: 'name', label: 'Name' },
+      { f: 'role', label: 'Role', cls: 'l' },
+      { f: 'joined', label: 'Joined', cls: 'l', fmt: (v) => (v ? dfull(v) : '—') },
+      { f: 'tenure', label: 'With Alcove', cls: 'l' },
+      { f: 'birthday', label: 'Birthday', cls: 'l', fmt: (v) => (v ? dm(v) : '—') },
+      { f: 'days_to_birthday', label: 'Next birthday', cls: 'l', fmt: (v) => (v === null ? '—' : inDays(v)), chip: (v) => (v === null ? 'muted' : v <= 7 ? 'bad' : v <= 30 ? 'warn' : 'muted') },
+      { f: 'days_to_anniversary', label: 'Next anniversary', cls: 'l', fmt: (v, r) => (v === null ? '—' : r.anniversary_years + ' yr ' + inDays(v)) },
+      { f: 'whatsapp', label: 'WhatsApp on file', cls: 'l', chip: (v) => (v === 'Yes' ? 'good' : 'warn'), fmt: (v) => (v === 'Yes' ? 'Yes' : 'Number needed') }
+    ], rows, {});
+  }
+
+  // ---- Export: the selected day's figures as an Excel workbook, one sheet per section ----
+  const xmlEsc = (s) => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const colName = (i) => { let s = ''; i += 1; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const nice = (k) => k.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  const sheetXml = (rows) => {
+    const out = rows.map((r, ri) => '<row r="' + (ri + 1) + '">' + r.map((v, ci) => {
+      const ref = colName(ci) + (ri + 1);
+      const st = ri === 0 ? ' s="1"' : '';
+      if (typeof v === 'number' && Number.isFinite(v)) return '<c r="' + ref + '"' + st + '><v>' + v + '</v></c>';
+      if (v === null || v === undefined || v === '') return '<c r="' + ref + '"' + st + '/>';
+      return '<c r="' + ref + '"' + st + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(v) + '</t></is></c>';
+    }).join('') + '</row>').join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetData>' + out + '</sheetData></worksheet>';
+  };
+  const crcTable = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (b) => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = crcTable[(c ^ b[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const zip = (files) => {
+    const enc = new TextEncoder();
+    const parts = [], central = [];
+    let offset = 0;
+    files.forEach(({ name, text }) => {
+      const nb = enc.encode(name), db = enc.encode(text), crc = crc32(db);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, 0, true); h.setUint16(12, 0x5b21, true); h.setUint32(14, crc, true); h.setUint32(18, db.length, true); h.setUint32(22, db.length, true);
+      h.setUint16(26, nb.length, true); h.setUint16(28, 0, true);
+      parts.push(new Uint8Array(h.buffer), nb, db);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, 0, true); c.setUint16(14, 0x5b21, true); c.setUint32(16, crc, true); c.setUint32(20, db.length, true); c.setUint32(24, db.length, true);
+      c.setUint16(28, nb.length, true); c.setUint16(30, 0, true); c.setUint16(32, 0, true); c.setUint16(34, 0, true); c.setUint16(36, 0, true); c.setUint32(38, 0, true); c.setUint32(42, offset, true);
+      central.push(new Uint8Array(c.buffer), nb);
+      offset += 30 + nb.length + db.length;
+    });
+    const cdSize = central.reduce((s, a) => s + a.length, 0);
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, offset, true);
+    const all = parts.concat(central, [new Uint8Array(e.buffer)]);
+    const out = new Uint8Array(all.reduce((s, a) => s + a.length, 0));
+    let p = 0; all.forEach((a) => { out.set(a, p); p += a.length; });
+    return out;
+  };
+  const tableRows = (rows, drop = []) => {
+    if (!rows || !rows.length) return [['No data for this period']];
+    const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))].filter((k) => drop.indexOf(k) < 0);
+    return [keys.map(nice)].concat(rows.map((r) => keys.map((k) => r[k])));
+  };
+  const buildWorkbook = () => {
+    const { from: F, to: D } = cur();
+    const k = (okRows('kpis') || [])[0] || {};
+    const LABEL = { priority_target: 'Priority leads on morning list', priority_called: 'Priority leads called', priority_pct: 'Priority achievement (0-1)', priority_connected: 'Priority leads connected', priority_calls: 'Calls on priority leads', hot_not_called: 'Hot leads (P1/P2) not called', fresh_enquiries: 'Fresh enquiries', office_hours_fresh: 'Fresh enquiries in office hours', within_5min: 'Called within 5 minutes', missed_5min: 'Missed the 5-minute call', sop_pct: '5-minute SOP met (0-1)', overnight: 'Overnight leads', overnight_by_noon: 'Overnight leads called by 12 noon', connected_customers: 'Connected customers', leads_called: 'Leads called', total_calls: 'Calls made', reconnect_requests: 'Reconnect: customers who asked', reconnect_tasks: 'Reconnect: requests', reconnect_called_back: 'Reconnect: called back', reconnect_pending: 'Reconnect: missed (open, no call)', reconnect_closed: 'Reconnect: closed with no call', reconnect_no_lead: 'Reconnect: requests with no lead linked', reconnect_rate: 'Reconnect call-back rate (0-1)', absent: 'Absent (no logged calls)' };
+    const overview = [['Presales Daily Scorecard', ''], ['From', F], ['To', D], ['Note', 'Task 3 priority figures are for the To date'], ['', ''], ['Figure', 'Value']].concat(Object.keys(LABEL).map((f) => [LABEL[f], k[f]]));
+    overview.push(['', ''], ['Insights', '']);
+    (okRows('insights') || []).forEach((r) => overview.push([r.n, r.text]));
+    const sheets = [
+      ['Overview', overview],
+      ['T1 Fresh by owner', tableRows(okRows('fresh_by_owner'))],
+      ['T1 Missed 5 min', tableRows(okRows('fresh_missed'), ['lead_id'])],
+      ['T2 Reconnect missed', tableRows((okRows('reconnect_list') || []).filter((r) => r.outcome === 'Missed'), ['lead_id', 'called_back'])],
+      ['T2 Reconnect customers', tableRows(okRows('reconnect_list'), ['lead_id'])],
+      ['T2 Reconnect by owner', tableRows(okRows('reconnect_by_owner'))],
+      ['T3 Priority by executive', tableRows(okRows('priority_by_exec'))],
+      ['T3 Priority leads', tableRows(okRows('priority_leads'), ['lead_id', 'report_date'])],
+      ['Calls by executive', tableRows(okRows('calls_by_exec'))],
+      ['T4 Attendance on To date', tableRows(okRows('attendance_today'))],
+      ['T4 Attendance period', tableRows(okRows('attendance_month'))],
+      ['T4 Weekly roster', tableRows(okRows('roster_week'))],
+      ['T4 Attendance log', tableRows((okRows('attendance_log') || []).filter((r) => r.status !== 'Upcoming'), ['key', 'in_week', 'in_month', 'is_report_day'])],
+      ['Team directory', tableRows(okRows('team_directory'))]
+    ];
+    // Overview's first row is a title, so style its header row 4 instead: simplest is to keep row 1 bold.
+    const files = [
+      { name: '[Content_Types].xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' + sheets.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>' },
+      { name: '_rels/.rels', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+      { name: 'xl/workbook.xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + sheets.map((s, i) => '<sheet name="' + xmlEsc(s[0]) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>' },
+      { name: 'xl/_rels/workbook.xml.rels', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') + '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+      { name: 'xl/styles.xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF204768"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>' }
+    ].concat(sheets.map((s, i) => ({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', text: sheetXml(s[1]) })));
+    return zip(files);
+  };
+  const fileName = () => { const { from, to } = cur(); return 'Presales_Scorecard_' + (dash.params().all ? 'All_time_to_' + to : from === to ? to : from + '_to_' + to) + '.xlsx'; };
+  const exportBtn = document.querySelector('.ps-export');
+  const exportMsg = document.querySelector('.ps-export-msg');
+  const say = (t) => { exportMsg.hidden = !t; exportMsg.textContent = t || ''; };
+  exportBtn.addEventListener('click', async () => {
+    const waiting = ['kpis', 'reconnect_by_owner', 'priority_leads', 'fresh_by_owner', 'reconnect_list', 'attendance_log', 'team_directory'].filter((id) => st(id).status === 'loading' || st(id).refreshing);
+    if (waiting.length) { say('Still loading this period’s data. Try Export again in a few seconds.'); return; }
+    exportBtn.disabled = true;
+    say('Preparing the workbook…');
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+      if (!dl) { say('Export isn’t available in this view. Use Sources, then Download CSV, for any section.'); return; }
+      const data = buildWorkbook();
+      await dl.save({ filename: fileName(), data });
+      say('Saved ' + fileName());
+    } catch (e) {
+      const code = e && e.code;
+      say(code === 'declined' ? '' : code === 'rate_limited' ? 'A save is already waiting for your answer.' : 'Export didn’t work here (' + (code || 'error') + '). Use Sources, then Download CSV.');
+    } finally {
+      exportBtn.disabled = false;
+    }
+  });
+
+  dash.onData(() => { draw(); drawAttendance(); drawTeam(); });
+  document.querySelectorAll('.ps-tab').forEach((b) => b.addEventListener('click', () => { drawAttendance(); drawTeam(); }));
+  show(current);
+  drawAttendance();
+  drawTeam();
+</script>

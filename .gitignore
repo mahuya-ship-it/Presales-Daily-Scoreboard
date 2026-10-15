@@ -1,0 +1,6 @@
+# Generated upload copy of the page
+build/
+
+# Team list: personal data (birthdays, joining dates) stays out of the repo
+team.json
+store/datasets/team.json

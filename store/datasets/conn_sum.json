@@ -1,0 +1,1 @@
+{"title":"Connected customers per executive","description":"Leads with at least one connected call result in the period, per executive and team. Reads Task.","source":{"kind":"query","connector":"Salesforce","tool":"soqlQuery","args":{"q":"{{q_conn_sum}}"}}}
