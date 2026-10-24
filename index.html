@@ -99,6 +99,7 @@
   .ps-t td a:hover { color: var(--gold); }
   .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-la-drill[hidden] { display: none; }
+  .ps-t td.ps-wrap { white-space: normal; min-width: 180px; max-width: 320px; }
   .ps-drill-close { font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
   .ps-tbl-export:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .ps-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 85ch; }
@@ -296,7 +297,7 @@
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-subsource-table" data-name="Lead_analysis_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subsource-table" data-source="la_by_subsource" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="la-subresult-table" data-name="Lead_analysis_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Closed Lost = Lost. Registered = Qualified Registered (grading Q-0, Q-1) or Semi Qualified Registered (Q-2, Q-3). Converted and Site Visit Done leads are split the same way, e.g. Converted (Qualified Registered) or Site Visit Done (Semi Qualified Registered). Requirement Qualified and Semi Qualified leads show their status. Call Back and Call Back Requested = Call Back Request. Other leads show their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subresult-table" data-source="la_subsource_result" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-result-table" data-name="Lead_analysis_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Last Activity Call Result on the lead.</p><div class="ps-scroll tall"><table class="ps-t" id="la-result-table" data-source="la_by_result" data-row-key="key"></table></div></div>
-        <div class="ps-card ps-la-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="la-drill-table" data-name="Lead_analysis_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the count you clicked. Click a customer name to open the lead in Salesforce, or a number to call.</p><div class="ps-scroll tall"><table class="ps-t" id="la-drill-table" data-row-key="lead_id"></table></div></div>
+        <div class="ps-card ps-la-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="la-drill-table" data-name="Lead_analysis_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the count you clicked. Click a customer name to open the lead in Salesforce, or a number to call. Last comment, task created and follow-up date come from the lead’s latest follow-up task that has a comment (e.g. Call Back).</p><div class="ps-scroll tall"><table class="ps-t" id="la-drill-table" data-row-key="lead_id"></table></div></div>
       </template>
 
       <!-- Team & birthdays -->
@@ -366,7 +367,7 @@
     p.project = proj;
     const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
-    p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
+    p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
     // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
     // The query covers the first 200 days (W); the loader asks for the rest up to E in 200-day steps.
@@ -473,13 +474,17 @@
         if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
         return a.records.map((r) => { const o = {}; Object.entries(r).forEach(([k, v]) => { if (k === 'attributes') return; if (v && typeof v === 'object' && !Array.isArray(v)) Object.entries(v).forEach(([k2, v2]) => { if (k2 !== 'attributes') o[k + '_' + k2] = v2; }); else o[k] = v; }); return o; });
       };
-      let rows = recs(answer), page = rows, n = 1, cut = false;
-      while (page.length === 2000) {
+      // Pages can come back smaller than 2,000 when the query has a task subquery, so also follow Salesforce's done flag.
+      const more = (x) => { let a = x; if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { return false; } } return !!(a && a.done === false); };
+      let rows = recs(answer), page = rows, n = 1, cut = false, open = more(answer);
+      while (page.length && (page.length === 2000 || open)) {
         if (n >= 30) { cut = true; break; }
-        page = recs(await call('soqlQuery', { q: args.q.replace(' ORDER BY Id', " AND Id > '" + page[page.length - 1].Id + "' ORDER BY Id") }));
+        const ans = await call('soqlQuery', { q: args.q.replace(' ORDER BY Id', " AND Id > '" + page[page.length - 1].Id + "' ORDER BY Id") });
+        page = recs(ans); open = more(ans);
         rows = rows.concat(page); n += 1;
       }
-      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c'];
+      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c', 'Task_Subject', 'Task_Comment', 'Task_Created', 'Task_FollowUp'];
+      rows.forEach((r) => { const t = (Array.isArray(r.Tasks_records) && r.Tasks_records[0]) || {}; r.Task_Subject = t.Subject || null; r.Task_Comment = t.Comment__c || null; r.Task_Created = t.CreatedDate || null; r.Task_FollowUp = t.Follow_Up_Date_Time__c || null; });
       return { columns: cols, rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] === undefined ? null : r[c]]))), cut, meta: [{ label: 'Salesforce pages', value: String(n) }, { label: 'Leads read', value: String(rows.length) }] };
     }
   });
@@ -952,6 +957,9 @@
         // Requirement / Semi Qualified status as the result; Call Back and Call Back Requested = Call Back Request; every other result as it is.
         const cr = l.Last_Activity_Call_Result__c || '', gr = String(l.Enquiry_Grading__c || '').toUpperCase().replace(/[^Q0-9]/g, '');
         rows[rows.length - 1].grading = l.Enquiry_Grading__c || '';
+        rows[rows.length - 1].last_comment = l.Task_Comment || '';
+        rows[rows.length - 1].task_created = l.Task_Created ? ist(l.Task_Created).slice(0, 16).replace('T', ' ') : '';
+        rows[rows.length - 1].follow_up = l.Task_FollowUp ? ist(l.Task_FollowUp).slice(0, 16).replace('T', ' ') : '';
         // Converted / Site Visit Done split by grading too (24 Oct 2026): e.g. Converted (Qualified Registered).
         const cv = l.Status === 'Converted' || l.Status === 'Site Visit Done';
         rows[rows.length - 1].result_group = RANK[l.Status] === 7 ? 'Lost'
@@ -1418,6 +1426,9 @@
           { f: 'status', label: 'Status', cls: 'l' },
           { f: 'grading', label: 'Grading', cls: 'l' },
           { f: 'call_result', label: 'Last call result', cls: 'l' },
+          { f: 'last_comment', label: 'Last comment', cls: 'l ps-wrap' },
+          { f: 'task_created', label: 'Task created (IST)', cls: 'l' },
+          { f: 'follow_up', label: 'Follow-up date (IST)', cls: 'l' },
           { f: 'source', label: 'Source', cls: 'l' },
           { f: 'sub_source', label: 'Sub-source', cls: 'l' },
           { f: 'created', label: 'Created (IST)', cls: 'l' }
