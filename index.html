@@ -12,10 +12,14 @@
     display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; justify-content: space-between;
     border-bottom: 4px solid var(--gold); position: relative; overflow: hidden;
   }
-  .ps-refreshed { position: absolute; top: 8px; right: var(--cds-pad-xl); margin: 0; z-index: 1; font-size: var(--cds-font-size-caption); color: rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .12); border: 1px solid rgba(239, 204, 37, .55); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .ps-refresh-box { position: absolute; top: 8px; right: var(--cds-pad-xl); z-index: 1; display: flex; gap: 6px; align-items: center; }
+  .ps-refresh-now { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--gold); background: var(--gold); color: var(--navy-deep); }
+  .ps-refresh-now:disabled { opacity: .6; cursor: default; }
+  .ps-refresh-now:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .ps-refreshed { margin: 0; font-size: var(--cds-font-size-caption); color: rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .12); border: 1px solid rgba(239, 204, 37, .55); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
   .ps-refreshed b { color: var(--gold); font-weight: 700; }
   .ps-band { padding-top: calc(var(--cds-pad-lg) + 18px); }
-  @media (max-width: 640px) { .ps-refreshed { position: static; order: -1; width: 100%; white-space: normal; } .ps-band { padding-top: var(--cds-pad-lg); } }
+  @media (max-width: 640px) { .ps-refresh-box { position: static; order: -1; width: 100%; flex-wrap: wrap; } .ps-refreshed { white-space: normal; } .ps-band { padding-top: var(--cds-pad-lg); } }
   .ps-band::after { content: ""; position: absolute; right: -60px; top: -80px; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 204, 37, .28), rgba(239, 204, 37, 0) 70%); pointer-events: none; }
   .ps-brand { font-size: var(--cds-font-size-caption); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
   .ps-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 2px 0 0; color: #fff; text-wrap: balance; }
@@ -152,7 +156,7 @@
 
 <div class="ps">
   <header class="ps-band" id="top">
-    <p class="ps-refreshed" role="status" title="When this page last finished pulling data from Salesforce">Salesforce data: loading…</p>
+    <div class="ps-refresh-box"><p class="ps-refreshed" role="status" title="When this page last finished pulling data from Salesforce">Salesforce data: loading…</p><button type="button" class="ps-refresh-now" title="Pull the latest data from Salesforce now">↻ Refresh now</button></div>
     <div>
       <div class="ps-brand">Alcove Realty · New Kolkata presales</div>
       <h1 class="ps-title">Presales <span>Daily Scorecard</span></h1>
@@ -1125,6 +1129,15 @@
     LOADSTATE[id] = busy ? 'busy' : d.status;
     return d;
   };
+  const SOURCES = ['day', 'fresh_leads', 'fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_missed_rows', 'fresh_tat', 'la_leads', 'la_projects', 'calls_sum', 'conn_sum', 'reconnect', 'att_calls_daily', 'att_fresh_daily', 'calls', 'status_history', 'team',
+    'tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania'];
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.ps-refresh-now');
+    if (!b) return;
+    SOURCES.filter((id) => id in LOADSTATE).forEach((id) => { try { dash.refresh(id); } catch (e) { /* a source the page hasn't loaded */ } });
+    b.disabled = true;
+    setTimeout(() => { b.disabled = false; }, 5000);
+  });
   const showPulled = () => {
     const el = document.querySelector('.ps-refreshed');
     if (!el) return;
