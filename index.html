@@ -87,6 +87,11 @@
   .ps-t { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
   .ps-t th, .ps-t td { padding: 6px var(--cds-pad-sm); text-align: right; white-space: nowrap; }
   .ps-t th { position: sticky; top: 0; z-index: 1; color: #fff; font-weight: 600; background: var(--navy); }
+  .ps-t th.ps-sortable { cursor: pointer; user-select: none; }
+  .ps-t th.ps-sortable:hover { background: var(--navy-deep); }
+  .ps-t th.ps-sortable:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .ps-sort { font-size: 10px; opacity: .45; white-space: nowrap; }
+  .ps-sort.on { opacity: 1; color: var(--gold); }
   .ps-t th:first-child { border-top-left-radius: 6px; } .ps-t th:last-child { border-top-right-radius: 6px; }
   .ps-t td { border-bottom: 1px solid var(--color-border-line); }
   .ps-t tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--c, var(--t0)) 5%, var(--color-panel)); }
@@ -194,7 +199,7 @@
           <div class="ps-kpi gold"><span class="ps-kpi-label">Overnight leads</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="overnight">—</span><span class="ps-kpi-sub"><span data-source="fresh_by_owner" data-where="owner=Team" data-field="overnight_called_by_noon">—</span> called by 12 noon</span></div>
         </div>
         <div class="ps-card" id="sop-chart-card"><h3>5-minute SOP by lead owner</h3><p class="ps-note">Office-hours fresh leads: called within 5 minutes vs missed.</p><div class="ps-legend"><span><i style="background: var(--good)"></i>Within 5 min</span><span><i style="background: var(--t1)"></i>Missed</span></div><div class="ps-chart" id="sop-chart" data-source="fresh_by_owner"></div></div>
-        <div class="ps-card"><h3>By lead owner</h3><div class="ps-scroll"><table class="ps-t" id="fresh-table" data-source="fresh_by_owner" data-row-key="owner"></table></div></div>
+        <div class="ps-card"><h3>By lead owner</h3><p class="ps-note">Time to 1st call = minutes from lead creation to the first call, office-hours leads already called (lunch-break leads left out). Click any column heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="fresh-table" data-source="fresh_by_owner" data-row-key="owner"></table></div></div>
         <div class="ps-card"><h3>Leads that missed the 5-minute call</h3><p class="ps-note ps-fm-note">Office-hours fresh leads with no first call, or a first call after 5 minutes.</p><div class="ps-scroll tall"><table class="ps-t" id="missed-table" data-source="fresh_missed" data-row-key="lead_id"></table></div></div>
       </section>
 
@@ -296,6 +301,8 @@
     p.q_fresh_all = HSEL + FR + HRS;
     p.q_fresh_nc = HSEL + FR + ' AND First_Call_Date_Time__c = null' + HRS;
     p.q_fresh_ok = HSEL + FR + ' AND TAT_of_Lead_Creation_to1st_Conn_in_min__c <= 5' + HRS;
+    const TAT = 'TAT_of_Lead_Creation_to1st_Conn_in_min__c';
+    p.q_fresh_tat = 'SELECT Owner.Name o, HOUR_IN_DAY(convertTimezone(Enquiry_Date__c)) hi, HOUR_IN_DAY(Enquiry_Date__c) hu, COUNT(Id) n, SUM(' + TAT + ') s, MIN(' + TAT + ') mn, MAX(' + TAT + ') mx' + FR + ' AND First_Call_Date_Time__c != null AND ' + TAT + ' != null' + HRS;
     p.q_fresh_missed = 'SELECT Id, Name, Owner.Name, Enquiry_Date__c, First_Call_Date_Time__c, TAT_of_Lead_Creation_to1st_Conn_in_min__c, Sub_source_Text__c, Inq_pkl_Source__c' + FR + ' AND ' + OFFICE + ' AND (First_Call_Date_Time__c = null OR TAT_of_Lead_Creation_to1st_Conn_in_min__c > 5) ORDER BY Enquiry_Date__c DESC LIMIT 2000';
     // Lead by lead (for "overnight leads called by 12 noon"): only for periods of up to 14 days.
     p.q_fresh = days(from, to) <= 14
@@ -370,7 +377,7 @@
     }
   });
 
-  ['tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania', 'calls', 'status_history', 'fresh_leads', 'fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_missed_rows', 'calls_sum', 'conn_sum'].forEach((id) => {
+  ['tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania', 'calls', 'status_history', 'fresh_leads', 'fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_tat', 'fresh_missed_rows', 'calls_sum', 'conn_sum'].forEach((id) => {
     dash.loader(id, { description: 'Salesforce records as rows (lookup fields flattened, e.g. Owner.Name becomes Owner_Name)', fn: sfRows });
   });
 
@@ -579,8 +586,8 @@
   dash.calc('fresh_by_owner', {
     title: 'Fresh enquiries and 5-minute SOP',
     description: 'Fresh leads per owner over the period (each day 6:30 PM to 6:30 PM), office-hours leads called within 5 minutes, missed, not called, and overnight leads (called by 12 noon: periods of up to 14 days). Leads that arrive during the owner’s lunch break are counted on their own and never as misses.',
-    inputs: ['fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_leads'],
-    fn: (fresh_all, fresh_nc, fresh_ok, fresh_leads) => {
+    inputs: ['fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_tat', 'fresh_leads'],
+    fn: (fresh_all, fresh_nc, fresh_ok, fresh_tat, fresh_leads) => {
       // Office hours 10:00 AM–6:30 PM IST: IST hour 10–17, or IST hour 18 with UTC hour 12 (18:00–18:29).
       const office = (r) => Number(r.hi) >= 10 && (Number(r.hi) <= 17 || (Number(r.hi) === 18 && Number(r.hu) === 12));
       // Lunch breaks (Mahuya, 24 Oct 2026), matched on the owner's first name (Mahuya Das only, not Mahuya Dutta).
@@ -593,6 +600,11 @@
       fresh_all.forEach((r) => { const o = row(r.o); const n = Number(r.n); o.fresh_enquiries += n; if (lunch(r)) o.lunch_break += n; else if (office(r)) o.office_hours += n; else o.overnight += n; });
       fresh_ok.forEach((r) => { if (office(r) && !lunch(r)) row(r.o).within_5_min += Number(r.n); });
       fresh_nc.forEach((r) => { if (office(r) && !lunch(r)) row(r.o).not_called += Number(r.n); });
+      // Time to first call, office-hours leads already called (lunch-break leads left out).
+      const T = {};
+      const addT = (k, r) => { const t = (T[k] = T[k] || { n: 0, s: 0, mn: null, mx: null }); t.n += Number(r.n); t.s += Number(r.s); t.mn = t.mn === null ? Number(r.mn) : Math.min(t.mn, Number(r.mn)); t.mx = t.mx === null ? Number(r.mx) : Math.max(t.mx, Number(r.mx)); };
+      fresh_tat.forEach((r) => { if (!office(r) || lunch(r)) return; addT(r.o || 'Unassigned', r); addT('\u0000Team', r); });
+      const tat = (k) => { const t = T[k]; return t && t.n ? { avg_first_call: Math.round((t.s / t.n) * 10) / 10, fastest_call: Math.round(t.mn), slowest_call: Math.round(t.mx) } : { avg_first_call: null, fastest_call: null, slowest_call: null }; };
       // Overnight leads called by 12 noon need each lead's times: worked out only when every lead of the period loaded.
       const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
       const total = fresh_all.reduce((s, r) => s + Number(r.n), 0);
@@ -612,11 +624,13 @@
         r.missed_5_min = r.office_hours - r.within_5_min;
         r.overnight_called_by_noon = exact ? noon[k] || 0 : null;
         r.sop_met = r.office_hours ? r.within_5_min / r.office_hours : null;
-        return Object.fromEntries(['owner'].concat(F, ['sop_met']).map((f) => [f, r[f]]));
+        Object.assign(r, tat(k));
+        return Object.fromEntries(['owner'].concat(F, ['sop_met', 'avg_first_call', 'fastest_call', 'slowest_call']).map((f) => [f, r[f]]));
       });
       const t = { owner: 'Team' };
       F.forEach((f) => { t[f] = f === 'overnight_called_by_noon' && !exact ? null : out.reduce((s, r) => s + (r[f] || 0), 0); });
       t.sop_met = t.office_hours ? t.within_5_min / t.office_hours : null;
+      Object.assign(t, tat('\u0000Team'));
       out.push(t);
       return out;
     }
@@ -950,14 +964,35 @@
 
   const chip = (td, text, cls) => { td.replaceChildren(); const s = document.createElement('span'); s.className = 'ps-chip ' + cls; s.textContent = text; td.appendChild(s); };
 
-  // Generic table: cols = [{f, label, fmt, cls, chip}]
+  // Generic table: cols = [{f, label, fmt, cls, chip}]; opts.sortable adds ▲▼ sorting by heading, opts.pin keeps rows (e.g. Team) last.
+  const SORT = {};
   const table = (el, id, cols, rows, opts = {}) => {
     el.replaceChildren();
     if (failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
+    const s = opts.sortable ? SORT[el.id] : null;
     const head = el.createTHead().insertRow();
-    cols.forEach((c) => { const th = document.createElement('th'); th.textContent = c.label; th.dataset.field = c.f; if (c.cls) th.className = c.cls; head.appendChild(th); });
+    cols.forEach((c) => {
+      const th = document.createElement('th'); th.textContent = c.label; th.dataset.field = c.f; if (c.cls) th.className = c.cls;
+      if (opts.sortable) {
+        const on = s && s.f === c.f;
+        const a = document.createElement('span'); a.className = 'ps-sort' + (on ? ' on' : ''); a.textContent = on ? (s.dir === 'asc' ? ' ▲' : ' ▼') : ' ▲▼';
+        th.appendChild(a); th.classList.add('ps-sortable'); th.tabIndex = 0;
+        th.title = 'Sort by ' + c.label + (on ? (s.dir === 'asc' ? ' (lowest first)' : ' (highest first)') : '');
+        th.setAttribute('aria-sort', on ? (s.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+        const go = () => { SORT[el.id] = { f: c.f, dir: on && s.dir === 'desc' ? 'asc' : 'desc' }; draw(); };
+        th.addEventListener('click', go);
+        th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      }
+      head.appendChild(th);
+    });
     const tb = el.createTBody();
     if (!rows) return;
+    if (s) {
+      const pin = opts.pin || (() => false);
+      const val = (r) => r[s.f];
+      const cmp = (a, b) => { const x = val(a), y = val(b); const nx = x === null || x === undefined || x === '', ny = y === null || y === undefined || y === ''; if (nx || ny) return nx === ny ? 0 : nx ? 1 : -1; const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'en', { numeric: true }); return s.dir === 'asc' ? d : -d; };
+      rows = rows.filter((r) => !pin(r)).sort(cmp).concat(rows.filter(pin));
+    }
     if (!rows.length && opts.empty) { const tr = tb.insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; td.className = 'l'; td.textContent = opts.empty; return; }
     rows.forEach((r) => {
       const tr = tb.insertRow();
@@ -1102,19 +1137,22 @@
         { f: 'missed_5_min', label: 'Missed 5 min', fmt: (v) => fmtN(v) },
         { f: 'not_called', label: 'Not called', fmt: (v) => fmtN(v) },
         { f: 'lunch_break', label: 'Lunch break', fmt: (v) => fmtN(v) },
+        { f: 'avg_first_call', label: 'Avg time to 1st call', fmt: (v) => (v === null ? '—' : v + ' min'), chip: (v) => (v === null ? 'muted' : v <= 5 ? 'good' : v <= 15 ? 'warn' : 'bad') },
+        { f: 'fastest_call', label: 'Fastest', fmt: (v) => (v === null ? '—' : v + ' min') },
+        { f: 'slowest_call', label: 'Slowest', fmt: (v) => (v === null ? '—' : v + ' min') },
         { f: 'sop_met', label: 'SOP met', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.9 ? 'good' : v >= 0.7 ? 'warn' : 'bad') },
         { f: 'overnight', label: 'Overnight', fmt: (v) => fmtN(v) },
         { f: 'overnight_called_by_noon', label: 'Called by noon', fmt: (v) => (v === null ? '—' : fmtN(v)) }
-      ], fb, { rowClass: (r) => (r.owner === 'Team' ? 'team' : ''), empty: 'No fresh enquiries in this period.' });
+      ], fb, { rowClass: (r) => (r.owner === 'Team' ? 'team' : ''), empty: 'No fresh enquiries in this period.', sortable: true, pin: (r) => r.owner === 'Team' });
       const fm = okRows('fresh_missed');
       table(document.getElementById('missed-table'), 'fresh_missed', [
         { f: 'owner', label: 'Lead owner', cls: 'l' },
         { f: 'client', label: 'Client', cls: 'l' },
         { f: 'created_on', label: 'Date', cls: 'l', fmt: (v) => (v ? dfull(v) : '—') },
         { f: 'created_at', label: 'Created', cls: 'l' },
-        { f: 'result', label: 'First call', cls: 'l', chip: (v) => (v === 'Not called' ? 'bad' : 'warn') },
+        { f: 'minutes_to_first_call', label: 'First call', cls: 'l', fmt: (v, r) => r.result, chip: (v) => (v === null ? 'bad' : 'warn') },
         { f: 'source', label: 'Source', cls: 'l' }
-      ], fm, { key: 'lead_id', empty: 'No office-hours fresh lead missed the 5-minute call.' });
+      ], fm, { key: 'lead_id', empty: 'No office-hours fresh lead missed the 5-minute call.', sortable: true });
       const fmNote = document.querySelector('.ps-fm-note');
       fmNote.textContent = fm && fm.length >= 2000 ? 'Showing the latest 2,000. The owner totals above count every lead in the period.' : 'Office-hours fresh leads with no first call, or a first call after 5 minutes. Newest first.';
     }

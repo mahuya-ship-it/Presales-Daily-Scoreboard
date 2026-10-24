@@ -17,6 +17,7 @@ DS('fresh_all','Fresh enquiries per owner and hour','Inbound and Outbound leads 
 DS('fresh_nc','Fresh enquiries not called','Fresh leads of the period with no first call, per owner and creation hour. Reads Lead.','q_fresh_nc');
 DS('fresh_ok','Fresh enquiries called within 5 minutes','Fresh leads of the period whose first call came within 5 minutes (Salesforce’s TAT of lead creation to 1st connection, in minutes), per owner and creation hour. Reads Lead.','q_fresh_ok');
 DS('fresh_missed_rows','Fresh enquiries that missed 5 minutes','Office-hours fresh leads of the period with no first call or a first call after 5 minutes, newest first (latest 2,000). Reads Lead.','q_fresh_missed');
+DS('fresh_tat','Time to first call per owner and hour','Office and outside-hours fresh leads already called: count, total, fastest and slowest minutes from creation to first call (Salesforce TAT of lead creation to 1st connection), per owner and creation hour. Reads Lead.','q_fresh_tat');
 DS('calls_sum','Calls per executive over the period','Logged calls (distinct call times) and leads called per executive, with Salesforce’s team total. Reads Task.','q_calls_sum');
 DS('conn_sum','Connected customers per executive','Leads with at least one connected call result in the period, per executive and team. Reads Task.','q_conn_sum');
 DS('reconnect','Reconnect requests','Salesforce "Reconnect with Customer." tasks of the period, one row per customer, with the lead’s details and its latest logged call. Reads Task and Lead.','q_reconnect');
