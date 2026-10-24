@@ -294,7 +294,7 @@
           <div class="ps-kpi gold"><span class="ps-kpi-label">Qualified</span><span class="ps-kpi-val" data-source="la_summary" data-field="qualified" data-row="0">—</span><span class="ps-kpi-sub">Req. Qualified + Semi Qualified</span></div>
           <div class="ps-kpi bad"><span class="ps-kpi-label">Closed Lost</span><span class="ps-kpi-val" data-source="la_summary" data-field="closed_lost" data-row="0">—</span><span class="ps-kpi-sub">of presales leads</span></div>
         </div>
-        <div class="ps-card"><div class="ps-card-h"><h3>Lead owner vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-owner-table" data-name="Lead_analysis_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click any heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="la-owner-table" data-source="la_by_owner" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Lead owner vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-owner-table" data-name="Lead_analysis_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Leads with a Presales User with AI are shared: Hybrid gives 0.5 to the presales member and 0.5 to the AI member; Auto gives 0.1 to the presales member and 0.9 to the AI member. Other tables count whole leads.</p><p class="ps-note">Click any heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="la-owner-table" data-source="la_by_owner" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-source-table" data-name="Lead_analysis_by_source">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="la-source-table" data-source="la_by_source" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-subsource-table" data-name="Lead_analysis_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subsource-table" data-source="la_by_subsource" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="la-subresult-table" data-name="Lead_analysis_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Closed Lost = Lost. Registered = Qualified Registered (grading Q-0, Q-1) or Semi Qualified Registered (Q-2, Q-3). Converted and Site Visit Done leads are split the same way, e.g. Converted (Qualified Registered) or Site Visit Done (Semi Qualified Registered). Requirement Qualified and Semi Qualified leads show their status. Call Back and Call Back Requested = Call Back Request. Other leads show their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subresult-table" data-source="la_subsource_result" data-row-key="key"></table></div></div>
@@ -945,9 +945,13 @@
       const ist = (s) => (s ? new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString() : '');
       const rows = [];
       la_leads.forEach((l) => {
-        let owner = l.Owner_Name || '', from = 'Lead owner';
+        let owner = l.Owner_Name || '', from = 'Lead owner', aiName = '', aiMode = '';
         if (SALES.indexOf(l.Status) >= 0) {
-          const ai = String(l.Presales_AI_Assignment__c || '').split('+')[0].trim();
+          const parts = String(l.Presales_AI_Assignment__c || '').split('+');
+          const ai = parts[0].replace(/ +/g, ' ').trim();
+          // Credit (Mahuya, 24 Oct 2026): Hybrid = 0.5 presales member + 0.5 AI; Auto = 0.1 presales member + 0.9 AI.
+          const m = String(parts[1] || '').replace(/ +/g, ' ').trim().match(/^(.*?) (hybrid|auto)$/i);
+          if (m) { aiName = m[1].trim(); aiMode = m[2].toLowerCase() === 'auto' ? 'Auto' : 'Hybrid'; }
           if (ai) { owner = ai; from = 'Presales User with AI'; }
           else if (l.Tele_Caller__r_Name) { owner = l.Tele_Caller__r_Name; from = 'Presales User'; }
         }
@@ -959,6 +963,9 @@
         // Requirement / Semi Qualified status as the result; Call Back and Call Back Requested = Call Back Request; every other result as it is.
         const cr = l.Last_Activity_Call_Result__c || '', gr = String(l.Enquiry_Grading__c || '').toUpperCase().replace(/[^Q0-9]/g, '');
         rows[rows.length - 1].grading = l.Enquiry_Grading__c || '';
+        const pc = aiName ? (aiMode === 'Auto' ? 0.1 : 0.5) : 1;
+        Object.assign(rows[rows.length - 1], { ai_member: aiName, ai_mode: aiMode, presales_credit: pc, ai_credit: aiName ? Math.round((1 - pc) * 10) / 10 : 0,
+          credit: aiName ? o + ' ' + pc + ' · ' + aiName + ' ' + Math.round((1 - pc) * 10) / 10 + ' (' + aiMode + ')' : o + ' 1' });
         rows[rows.length - 1].last_comment = l.Task_Comment || '';
         rows[rows.length - 1].task_created = l.Task_Created ? ist(l.Task_Created).slice(0, 16).replace('T', ' ') : '';
         rows[rows.length - 1].follow_up = l.Task_FollowUp ? ist(l.Task_FollowUp).slice(0, 16).replace('T', ' ') : '';
@@ -1004,15 +1011,18 @@
     const FU = [...new Set(kept.filter((r) => r.rank === 6).map((r) => 'fu:' + r.call_result))];
     const blank = () => { const o = { leads: 0 }; COLS.forEach(([c]) => { o[c] = 0; }); FU.forEach((c) => { o[c] = 0; }); return o; };
     const by = {}, tot = blank();
+    const shares = (r) => (field === 'owner' && r.ai_member ? [[r.owner, r.presales_credit], [r.ai_member, r.ai_credit]] : [[r[field], 1]]);
     kept.forEach((r) => {
-      const g = (by[r[field]] = by[r[field]] || blank());
       const col = r.rank === 6 ? 'fu:' + r.call_result : (COLS.find(([, n]) => n === r.rank) || COLS[6])[0];
-      g.leads += 1; g[col] += 1; tot.leads += 1; tot[col] += 1;
+      shares(r).forEach(([k, w]) => { const g = (by[k] = by[k] || blank()); g.leads += w; g[col] += w; });
+      tot.leads += 1; tot[col] += 1;
     });
-    const fin = (key, o) => ({ key, [label]: key, ...o, registered_plus: o.converted + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted + o.site_visit_done + o.registered) / o.leads : null });
+    const r1 = (o) => { const x = {}; Object.keys(o).forEach((k) => { x[k] = typeof o[k] === 'number' ? Math.round(o[k] * 10) / 10 : o[k]; }); return x; };
+    const fin = (key, o0) => { const o = r1(o0); return {
+      key, [label]: key, ...o, registered_plus: o.converted + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted + o.site_visit_done + o.registered) / o.leads : null }; };
     return Object.keys(by).sort((a, b) => by[b].leads - by[a].leads).map((key) => fin(key, by[key])).concat(la_clean.length ? [fin('Total', tot)] : []);
   };
-  dash.calc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
+  dash.calc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status. A lead with Presales User with AI is shared: Hybrid 0.5 presales member + 0.5 AI, Auto 0.1 presales member + 0.9 AI.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
   dash.calc('la_by_source', { title: 'Lead analysis by source', description: 'Presales leads per Source, by status.', inputs: ['la_clean'], fn: laGroup('source', 'source') });
   dash.calc('la_by_subsource', { title: 'Lead analysis by sub-source', description: 'Presales leads per Sub-source, by status.', inputs: ['la_clean'], fn: laGroup('sub_source', 'sub_source') });
   dash.calc('la_subsource_result', {
@@ -1471,13 +1481,14 @@
         const d = LA_DRILL, all = okRows('la_clean');
         if (!d || !all || !colPred(d.f)) { card.hidden = true; return; }
         const p = colPred(d.f);
-        const list = all.filter((x) => x.kept === 'Yes' && (d.key === 'Total' || x[d.field] === d.key) && p(x));
+        const list = all.filter((x) => x.kept === 'Yes' && (d.key === 'Total' || x[d.field] === d.key || (d.field === 'owner' && x.ai_member === d.key)) && p(x));
         card.hidden = false;
         card.querySelector('.ps-drill-h').textContent = d.title + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
         table(document.getElementById('la-drill-table'), 'la_clean', [
           { f: 'client', label: 'Customer', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
           { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
           { f: 'owner', label: 'Presales owner', cls: 'l' },
+          { f: 'credit', label: 'Credit', cls: 'l' },
           { f: 'status', label: 'Status', cls: 'l' },
           { f: 'grading', label: 'Grading', cls: 'l' },
           { f: 'call_result', label: 'Last call result', cls: 'l' },
