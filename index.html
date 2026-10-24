@@ -989,7 +989,8 @@
     if (!rows) return;
     if (s) {
       const pin = opts.pin || (() => false);
-      const val = (r) => r[s.f];
+      const col = cols.find((c) => c.f === s.f);
+      const val = (r) => (col && col.sortVal ? col.sortVal(r[s.f], r) : r[s.f]);
       const cmp = (a, b) => { const x = val(a), y = val(b); const nx = x === null || x === undefined || x === '', ny = y === null || y === undefined || y === ''; if (nx || ny) return nx === ny ? 0 : nx ? 1 : -1; const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'en', { numeric: true }); return s.dir === 'asc' ? d : -d; };
       rows = rows.filter((r) => !pin(r)).sort(cmp).concat(rows.filter(pin));
     }
@@ -1150,11 +1151,11 @@
         { f: 'client', label: 'Client', cls: 'l' },
         { f: 'created_on', label: 'Date', cls: 'l', fmt: (v) => (v ? dfull(v) : '—') },
         { f: 'created_at', label: 'Created', cls: 'l' },
-        { f: 'minutes_to_first_call', label: 'First call', cls: 'l', fmt: (v, r) => r.result, chip: (v) => (v === null ? 'bad' : 'warn') },
+        { f: 'minutes_to_first_call', label: 'First call', cls: 'l', sortVal: (v) => (v === null || v === undefined ? Infinity : v), fmt: (v, r) => r.result, chip: (v) => (v === null ? 'bad' : 'warn') },
         { f: 'source', label: 'Source', cls: 'l' }
       ], fm, { key: 'lead_id', empty: 'No office-hours fresh lead missed the 5-minute call.', sortable: true });
       const fmNote = document.querySelector('.ps-fm-note');
-      fmNote.textContent = fm && fm.length >= 2000 ? 'Showing the latest 2,000. The owner totals above count every lead in the period.' : 'Office-hours fresh leads with no first call, or a first call after 5 minutes. Newest first.';
+      fmNote.textContent = fm && fm.length >= 2000 ? 'Showing the latest 2,000. The owner totals above count every lead in the period.' : 'Office-hours fresh leads with no first call, or a first call after 5 minutes. Newest first. Click First call (or any heading) to sort: ▼ slowest first, ▲ fastest first; Not called counts as slowest.';
     }
 
     if (current === 'task2') {
