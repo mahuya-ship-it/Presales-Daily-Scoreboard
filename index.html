@@ -92,6 +92,14 @@
   .ps-tbl-export { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: var(--navy); color: #fff; }
   .ps-tbl-export:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--navy-deep); }
   .ps-tbl-export:disabled { opacity: .5; cursor: default; }
+  .ps-drill { font: inherit; color: var(--navy); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .ps-drill:hover { color: var(--gold); }
+  .ps-drill:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .ps-t td a { color: var(--navy); text-underline-offset: 2px; }
+  .ps-t td a:hover { color: var(--gold); }
+  .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
+  .ps-la-drill[hidden] { display: none; }
+  .ps-drill-close { font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
   .ps-tbl-export:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .ps-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 85ch; }
   .ps-scroll { overflow-x: auto; }
@@ -288,6 +296,7 @@
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-subsource-table" data-name="Lead_analysis_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subsource-table" data-source="la_by_subsource" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="la-subresult-table" data-name="Lead_analysis_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Closed Lost = Lost. Registered = Qualified Registered (grading Q-0, Q-1) or Semi Qualified Registered (Q-2, Q-3). Requirement Qualified and Semi Qualified leads show their status. Call Back and Call Back Requested = Call Back Request. Other leads show their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subresult-table" data-source="la_subsource_result" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-result-table" data-name="Lead_analysis_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Last Activity Call Result on the lead.</p><div class="ps-scroll tall"><table class="ps-t" id="la-result-table" data-source="la_by_result" data-row-key="key"></table></div></div>
+        <div class="ps-card ps-la-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="la-drill-table" data-name="Lead_analysis_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the count you clicked. Click a customer name to open the lead in Salesforce, or a number to call.</p><div class="ps-scroll tall"><table class="ps-t" id="la-drill-table" data-row-key="lead_id"></table></div></div>
       </template>
 
       <!-- Team & birthdays -->
@@ -1129,6 +1138,7 @@
 
   // Generic table: cols = [{f, label, fmt, cls, chip}]; opts.sortable adds ▲▼ sorting by heading, opts.pin keeps rows (e.g. Team) last.
   const SORT = {};
+  let LA_DRILL = null;
   const table = (el, id, cols, rows, opts = {}) => {
     el.replaceChildren();
     if (failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
@@ -1167,7 +1177,10 @@
         if (c.cls) td.className = c.cls;
         const v = r[c.f];
         const text = c.fmt ? c.fmt(v, r) : v === null || v === undefined || v === '' ? '—' : String(v);
-        if (c.chip) chip(td, text, c.chip(v, r)); else td.textContent = text;
+        if (c.chip) chip(td, text, c.chip(v, r));
+        else if (c.link && c.link(v, r)) { const a = document.createElement('a'); a.href = c.link(v, r); a.target = '_blank'; a.rel = 'noopener'; a.textContent = text; td.appendChild(a); }
+        else if (opts.drill && opts.drill.can(r, c)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ps-drill'; b.textContent = text; b.title = 'Show these ' + text + ' leads'; b.addEventListener('click', () => opts.drill.open(r, c)); td.appendChild(b); }
+        else td.textContent = text;
       });
     });
   };
@@ -1382,15 +1395,49 @@
         { f: 'reg_pct', label: 'Registered+ %', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.1 ? 'good' : v >= 0.05 ? 'warn' : 'bad') }
       ];
       const STC = (id) => STC0.concat(fuCols(okRows(id)), STC1);
-      const opt = (empty) => ({ key: 'key', rowClass: (r) => (r.key === 'Total' ? 'team' : ''), empty, sortable: true, pin: (r) => r.key === 'Total' });
+      const RK = { converted: 1, site_visit_done: 2, registered: 3, req_qualified: 4, semi_qualified: 5, closed_lost: 7 };
+      const colPred = (f) => f === 'leads' ? () => true : f === 'registered_plus' ? (x) => x.rank <= 3 : f === 'new_other' ? (x) => x.rank >= 8
+        : f.indexOf('fu:') === 0 ? (x) => x.rank === 6 && x.call_result === f.slice(3) : f.indexOf('cr:') === 0 ? (x) => x.result_group === f.slice(3) : RK[f] ? (x) => x.rank === RK[f] : null;
+      const drawDrill = () => {
+        const card = document.querySelector('.ps-la-drill');
+        if (!card) return;
+        const d = LA_DRILL, all = okRows('la_clean');
+        if (!d || !all || !colPred(d.f)) { card.hidden = true; return; }
+        const p = colPred(d.f);
+        const list = all.filter((x) => x.kept === 'Yes' && (d.key === 'Total' || x[d.field] === d.key) && p(x));
+        card.hidden = false;
+        card.querySelector('.ps-drill-h').textContent = d.title + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
+        table(document.getElementById('la-drill-table'), 'la_clean', [
+          { f: 'client', label: 'Customer', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
+          { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
+          { f: 'owner', label: 'Presales owner', cls: 'l' },
+          { f: 'status', label: 'Status', cls: 'l' },
+          { f: 'grading', label: 'Grading', cls: 'l' },
+          { f: 'call_result', label: 'Last call result', cls: 'l' },
+          { f: 'source', label: 'Source', cls: 'l' },
+          { f: 'sub_source', label: 'Sub-source', cls: 'l' },
+          { f: 'created', label: 'Created (IST)', cls: 'l' }
+        ], list, { key: 'lead_id', empty: 'No leads.', sortable: true });
+      };
+      const drill = (field, nameOf) => ({
+        can: (r, c) => c.f !== field && !!colPred(c.f) && typeof r[c.f] === 'number' && r[c.f] > 0,
+        open: (r, c) => {
+          LA_DRILL = { field, key: r.key, f: c.f, title: (r.key === 'Total' ? 'All ' + nameOf : r.key) + ' · ' + c.label };
+          drawDrill();
+          const card = document.querySelector('.ps-la-drill');
+          if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      const opt = (empty, field, nameOf) => ({ key: 'key', rowClass: (r) => (r.key === 'Total' ? 'team' : ''), empty, sortable: true, pin: (r) => r.key === 'Total', drill: field ? drill(field, nameOf) : null });
       const none = 'No presales leads for this project and period.';
-      table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), okRows('la_by_owner'), opt(none));
-      table(document.getElementById('la-source-table'), 'la_by_source', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), okRows('la_by_source'), opt(none));
-      table(document.getElementById('la-subsource-table'), 'la_by_subsource', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), okRows('la_by_subsource'), opt(none));
+      drawDrill();
+      table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), okRows('la_by_owner'), opt(none, 'owner', 'owners'));
+      table(document.getElementById('la-source-table'), 'la_by_source', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), okRows('la_by_source'), opt(none, 'source', 'sources'));
+      table(document.getElementById('la-subsource-table'), 'la_by_subsource', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), okRows('la_by_subsource'), opt(none, 'sub_source', 'sub-sources'));
       const subRes = okRows('la_subsource_result'), srTot = (subRes || []).find((r) => r.key === 'Total') || {};
       const srCols = Object.keys(srTot).filter((k) => k.indexOf('cr:') === 0).sort((a, b) => srTot[b] - srTot[a]).map((k) => ({ f: k, label: k.slice(3), fmt: (v) => fmtN(v || 0) }));
-      table(document.getElementById('la-subresult-table'), 'la_subsource_result', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }, { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) }].concat(srCols), subRes, opt(none));
-      table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), okRows('la_by_result'), opt(none));
+      table(document.getElementById('la-subresult-table'), 'la_subsource_result', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }, { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) }].concat(srCols), subRes, opt(none, 'sub_source', 'sub-sources'));
+      table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), okRows('la_by_result'), opt(none, 'call_result', 'call results'));
     }
 
     if (current === 'task3') {
@@ -1617,6 +1664,12 @@
     const body = [...el.querySelectorAll('tbody tr')].map((tr) => [...tr.cells].map((td) => { const t = td.textContent.trim(); if (t === '—') return ''; const n = t.replace(/,/g, ''); return /^-?[0-9]+(\.[0-9]+)?$/.test(n) ? Number(n) : t; }));
     return [head].concat(body);
   };
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('.ps-drill-close')) return;
+    LA_DRILL = null;
+    const card = document.querySelector('.ps-la-drill');
+    if (card) card.hidden = true;
+  });
   document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('.ps-tbl-export');
     if (!btn) return;
