@@ -286,6 +286,7 @@
         <div class="ps-card"><div class="ps-card-h"><h3>Lead owner vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-owner-table" data-name="Lead_analysis_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click any heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="la-owner-table" data-source="la_by_owner" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-source-table" data-name="Lead_analysis_by_source">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="la-source-table" data-source="la_by_source" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-subsource-table" data-name="Lead_analysis_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subsource-table" data-source="la_by_subsource" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="la-subresult-table" data-name="Lead_analysis_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Closed Lost = Lost. Registered = Qualified Registered (grading Q-0, Q-1) or Semi Qualified Registered (Q-2, Q-3). Requirement Qualified and Semi Qualified leads show their status. Call Back and Call Back Requested = Call Back Request. Other leads show their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subresult-table" data-source="la_subsource_result" data-row-key="key"></table></div></div>
         <div class="ps-card"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-result-table" data-name="Lead_analysis_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Last Activity Call Result on the lead.</p><div class="ps-scroll tall"><table class="ps-t" id="la-result-table" data-source="la_by_result" data-row-key="key"></table></div></div>
       </template>
 
@@ -356,7 +357,7 @@
     p.project = proj;
     const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
-    p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Date__c, Enquiry_Type__c' + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
+    p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
     // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
     // The query covers the first 200 days (W); the loader asks for the rest up to E in 200-day steps.
@@ -469,7 +470,7 @@
         page = recs(await call('soqlQuery', { q: args.q.replace(' ORDER BY Id', " AND Id > '" + page[page.length - 1].Id + "' ORDER BY Id") }));
         rows = rows.concat(page); n += 1;
       }
-      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Date__c', 'Enquiry_Type__c'];
+      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c'];
       return { columns: cols, rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] === undefined ? null : r[c]]))), cut, meta: [{ label: 'Salesforce pages', value: String(n) }, { label: 'Leads read', value: String(rows.length) }] };
     }
   });
@@ -938,6 +939,17 @@
         if (!o) return;
         const mob = String(l.mobile_no_converted_format_normal__c || l.MobilePhone || '').replace(/[^0-9]/g, '').slice(-10);
         rows.push({ lead_id: l.Id, client: l.Name || '', owner: o, owner_from: from, status: l.Status || '', rank: RANK[l.Status] || 9, mobile: mob, source: l.Inq_pkl_Source__c || '(blank)', sub_source: l.Sub_source_Text__c || '(blank)', call_result: l.Last_Activity_Call_Result__c || '(no call result)', created: ist(l.Enquiry_Date__c).slice(0, 16).replace('T', ' '), enquiry_type: l.Enquiry_Type__c || '(blank)', kept: 'Yes' });
+        // Call result for the sub-source report: Closed Lost = Lost; Registered by grading (Q-0/Q-1 Qualified Registered, Q-2/Q-3 Semi Qualified Registered);
+        // Requirement / Semi Qualified status as the result; Call Back and Call Back Requested = Call Back Request; every other result as it is.
+        const cr = l.Last_Activity_Call_Result__c || '', gr = String(l.Enquiry_Grading__c || '').toUpperCase().replace(/[^Q0-9]/g, '');
+        rows[rows.length - 1].grading = l.Enquiry_Grading__c || '';
+        rows[rows.length - 1].result_group = RANK[l.Status] === 7 ? 'Lost'
+          : l.Status === 'Registered' && (gr === 'Q0' || gr === 'Q1') ? 'Qualified Registered'
+          : l.Status === 'Registered' && (gr === 'Q2' || gr === 'Q3') ? 'Semi Qualified Registered'
+          : l.Status === 'Requirement Qualified' ? 'Requirement Qualified'
+          : l.Status === 'Semi Qualified' ? 'Semi Qualified'
+          : /^call ?back/i.test(cr.trim()) ? 'Call Back Request'
+          : cr || '(no call result)';
         rows[rows.length - 1].report_status = RANK[l.Status] === 6 ? 'Follow-up · ' + (l.Last_Activity_Call_Result__c || 'no call result') : l.Status || '';
       });
       const best = {};
@@ -980,6 +992,19 @@
   dash.calc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
   dash.calc('la_by_source', { title: 'Lead analysis by source', description: 'Presales leads per Source, by status.', inputs: ['la_clean'], fn: laGroup('source', 'source') });
   dash.calc('la_by_subsource', { title: 'Lead analysis by sub-source', description: 'Presales leads per Sub-source, by status.', inputs: ['la_clean'], fn: laGroup('sub_source', 'sub_source') });
+  dash.calc('la_subsource_result', {
+    title: 'Lead analysis: sub-source vs call result',
+    description: 'Presales leads per Sub-source by call result, where Closed Lost = Lost, Registered = Qualified Registered (Q-0/Q-1) or Semi Qualified Registered (Q-2/Q-3), Requirement Qualified and Semi Qualified statuses replace the call result, and Call Back / Call Back Requested = Call Back Request.',
+    inputs: ['la_clean'],
+    fn: (la_clean) => {
+      const kept = la_clean.filter((r) => r.kept === 'Yes');
+      const G = [...new Set(kept.map((r) => 'cr:' + r.result_group))];
+      const blank = () => { const o = { leads: 0 }; G.forEach((c) => { o[c] = 0; }); return o; };
+      const by = {}, tot = blank();
+      kept.forEach((r) => { const g = (by[r.sub_source] = by[r.sub_source] || blank()); const c = 'cr:' + r.result_group; g.leads += 1; g[c] += 1; tot.leads += 1; tot[c] += 1; });
+      return Object.keys(by).sort((a, b) => by[b].leads - by[a].leads).map((k) => ({ key: k, sub_source: k, ...by[k] })).concat(kept.length ? [{ key: 'Total', sub_source: 'Total', ...tot }] : []);
+    }
+  });
   dash.calc('la_by_result', { title: 'Lead analysis by call result', description: 'Presales leads per last call result, by status.', inputs: ['la_clean'], fn: laGroup('call_result', 'call_result') });
 
   dash.calc('kpis', {
@@ -1362,6 +1387,9 @@
       table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), okRows('la_by_owner'), opt(none));
       table(document.getElementById('la-source-table'), 'la_by_source', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), okRows('la_by_source'), opt(none));
       table(document.getElementById('la-subsource-table'), 'la_by_subsource', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), okRows('la_by_subsource'), opt(none));
+      const subRes = okRows('la_subsource_result'), srTot = (subRes || []).find((r) => r.key === 'Total') || {};
+      const srCols = Object.keys(srTot).filter((k) => k.indexOf('cr:') === 0).sort((a, b) => srTot[b] - srTot[a]).map((k) => ({ f: k, label: k.slice(3), fmt: (v) => fmtN(v || 0) }));
+      table(document.getElementById('la-subresult-table'), 'la_subsource_result', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }, { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) }].concat(srCols), subRes, opt(none));
       table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), okRows('la_by_result'), opt(none));
     }
 
