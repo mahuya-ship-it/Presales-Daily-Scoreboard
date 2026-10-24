@@ -100,6 +100,9 @@
   .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-la-drill[hidden], .ps-pr-drill[hidden] { display: none; }
   .ps-pr-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
+  .ps-t td.ps-picked { background: var(--gold); }
+  .ps-t td.ps-picked .ps-drill { color: var(--navy-deep); font-weight: 700; }
+  .ps-t tr.ps-notcalled td { background: color-mix(in srgb, var(--color-bad) 12%, transparent); }
   .ps-t td.ps-wrap { white-space: normal; min-width: 180px; max-width: 320px; }
   .ps-drill-close { font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
   .ps-tbl-export:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -258,7 +261,7 @@
           <div class="ps-card" id="priority-chart-card"><h3>Called vs target by executive</h3><div class="ps-legend"><span><i style="background: var(--t3)"></i>Called</span><span><i style="background: var(--cds-chart-muted)"></i>Not called</span></div><div class="ps-chart" id="priority-chart" data-source="priority_by_exec"></div></div>
           <div class="ps-card"><h3>Effectiveness</h3><p class="ps-note">Priority leads whose status moved up that day, Closed Lost, and hot leads reconnected.</p><div class="ps-scroll"><table class="ps-t" id="effect-table" data-source="priority_by_exec" data-row-key="executive"></table></div></div>
         </div>
-        <div class="ps-card"><h3>Segregation by priority (called / target)</h3><div class="ps-scroll"><table class="ps-t" id="priority-table" data-source="priority_by_exec" data-row-key="executive"></table></div><p class="ps-note">Click a P1–P4 or Not called figure to see the leads that were not called.</p></div>
+        <div class="ps-card"><h3>Segregation by priority (called / target)</h3><div class="ps-scroll"><table class="ps-t" id="priority-table" data-source="priority_by_exec" data-row-key="executive"></table></div><p class="ps-note">Click any Target, P1–P4, Called or Not called figure to list that executive’s leads; leads not called are highlighted and listed first.</p></div>
         <div class="ps-card ps-pr-drill" hidden><div class="ps-card-h"><h3 class="ps-pr-drill-h">Leads not called</h3><span><button type="button" class="ps-tbl-export" data-table="pr-drill-table" data-name="Priority_leads_not_called">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click a customer name to open the lead in Salesforce, or a number to call.</p><div class="ps-scroll tall"><table class="ps-t" id="pr-drill-table" data-source="priority_leads" data-row-key="lead_id"></table></div></div>
         <div class="ps-card"><h3>Hot leads (P1/P2) not called</h3><p class="ps-note">Present executives only, in morning-list order.</p><div class="ps-scroll tall"><table class="ps-t" id="hot-table" data-source="priority_leads" data-row-key="lead_id"></table></div></div>
       </section>
@@ -1169,18 +1172,21 @@
     const d = PR_DRILL, pl = okRows('priority_leads'), pr = okRows('priority_by_exec');
     if (!d || !pl || !pr) { card.hidden = true; return; }
     const present = pr.filter((r) => r.attendance === 'Present').map((r) => r.executive);
-    const list = pl.filter((x) => x.called === 'No' && (d.exec === 'Team (present)' ? present.indexOf(x.executive) >= 0 : x.executive === d.exec) && (!d.p || x.priority === d.p));
+    const list = pl.filter((x) => (d.exec === 'Team (present)' ? present.indexOf(x.executive) >= 0 : x.executive === d.exec) && (!d.p || x.priority === d.p) && (!d.only || x.called === d.only))
+      .slice().sort((a, b) => (a.called === b.called ? 0 : a.called === 'No' ? -1 : 1));
+    const nc = list.filter((x) => x.called === 'No').length;
     card.hidden = false;
-    card.querySelector('.ps-pr-drill-h').textContent = (d.exec === 'Team (present)' ? 'Team' : d.exec) + ' · ' + (d.p || 'All priorities') + ' not called – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
+    card.querySelector('.ps-pr-drill-h').textContent = (d.exec === 'Team (present)' ? 'Team' : d.exec) + ' · ' + (d.p || 'P1–P4') + (d.only === 'Yes' ? ' called' : d.only === 'No' ? ' not called' : '') + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads') + (d.only ? '' : ' (' + fmtN(nc) + ' not called)');
     table(document.getElementById('pr-drill-table'), 'priority_leads', [
       { f: 'executive', label: 'Executive', cls: 'l' },
       { f: 'client', label: 'Customer', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
       { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
       { f: 'sub_priority', label: 'Priority', cls: 'l', chip: (v) => (String(v).startsWith('P1') ? 'bad' : String(v).startsWith('P2') ? 'warn' : 'muted') },
+      { f: 'called', label: 'Called', cls: 'l', chip: (v) => (v === 'Yes' ? 'good' : 'bad') },
       { f: 'morning_status', label: 'Status (morning)', cls: 'l' },
       { f: 'last_result', label: 'Last call result', cls: 'l' },
       { f: 'days_overdue', label: 'Days overdue', fmt: (v) => fmtN(v || 0) }
-    ], list, { key: 'lead_id', empty: 'Every lead in this group was called.' });
+    ], list, { key: 'lead_id', empty: 'No leads in this group.', rowClass: (r) => (r.called === 'No' ? 'ps-notcalled' : '') });
   };
   // Mahuya (24 Oct 2026): every table gets sort arrows and an Export button.
   const addExport = (el) => {
@@ -1240,7 +1246,7 @@
         const text = c.fmt ? c.fmt(v, r) : v === null || v === undefined || v === '' ? '—' : String(v);
         if (c.chip) chip(td, text, c.chip(v, r));
         else if (c.link && c.link(v, r)) { const a = document.createElement('a'); a.href = c.link(v, r); a.target = '_blank'; a.rel = 'noopener'; a.textContent = text; td.appendChild(a); }
-        else if (opts.drill && opts.drill.can(r, c)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ps-drill'; b.textContent = text; b.title = opts.drill.title ? opts.drill.title(r, c) : 'Show these ' + text + ' leads'; b.addEventListener('click', () => opts.drill.open(r, c)); td.appendChild(b); }
+        else if (opts.drill && opts.drill.can(r, c)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ps-drill'; b.textContent = text; b.title = opts.drill.title ? opts.drill.title(r, c) : 'Show these ' + text + ' leads'; b.addEventListener('click', (ev) => { ev.stopPropagation(); opts.drill.open(r, c); }); if (opts.drill.picked && opts.drill.picked(r, c)) td.classList.add('ps-picked'); td.appendChild(b); }
         else td.textContent = text;
       });
     });
@@ -1545,10 +1551,12 @@
       ], pr, {
         rowClass: rc,
         drill: {
-          can: (r, c) => r.attendance !== 'Absent' && (c.f === 'not_called' ? r.not_called > 0 : /^p[1-4]_target$/.test(c.f) && r[c.f] - r[c.f.replace('_target', '_called')] > 0),
-          title: (r, c) => 'Show the ' + fmtN(c.f === 'not_called' ? r.not_called : r[c.f] - r[c.f.replace('_target', '_called')]) + ' leads not called',
+          can: (r, c) => r.attendance !== 'Absent' && ['target', 'called', 'not_called', 'p1_target', 'p2_target', 'p3_target', 'p4_target'].indexOf(c.f) >= 0 && r[c.f] > 0,
+          title: (r, c) => 'Show ' + (r.executive === 'Team (present)' ? 'the team' : r.executive) + '’s ' + (c.f === 'called' ? 'called' : c.f === 'not_called' ? 'not-called' : c.f === 'target' ? 'priority' : c.f.slice(0, 2).toUpperCase()) + ' leads',
+          picked: (r, c) => !!PR_DRILL && PR_DRILL.exec === r.executive && PR_DRILL.f === c.f,
           open: (r, c) => {
-            PR_DRILL = { exec: r.executive, p: c.f === 'not_called' ? '' : c.f.slice(0, 2).toUpperCase() };
+            PR_DRILL = { exec: r.executive, f: c.f, p: /^p[1-4]_/.test(c.f) ? c.f.slice(0, 2).toUpperCase() : '', only: c.f === 'called' ? 'Yes' : c.f === 'not_called' ? 'No' : '' };
+            draw();
             drawPrDrill();
             const card = document.querySelector('.ps-pr-drill');
             if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1765,6 +1773,7 @@
     if (card.classList.contains('ps-la-drill')) LA_DRILL = null;
     if (card.classList.contains('ps-pr-drill')) PR_DRILL = null;
     card.hidden = true;
+    draw();
   });
   document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('.ps-tbl-export');
