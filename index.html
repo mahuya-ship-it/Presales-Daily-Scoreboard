@@ -185,7 +185,7 @@
 
       <!-- Task 1 -->
       <section class="ps-screen t1" id="task1" role="tabpanel" aria-labelledby="tab-task1" hidden>
-        <div class="ps-sh"><span class="k">Task 1</span><h2>Fresh enquiries and the 5-minute call</h2><p>Fresh enquiry: Inbound or Outbound lead created from 6:30 PM the day before to 6:30 PM on the day. In office hours (10:00 AM–6:30 PM) the first call is due within 5 minutes; overnight leads are due by 12 noon. Lunch breaks are not counted against anyone: a lead that arrives in its owner's break (Sangita Biswas, Rima Debnath, Mahuya Das 1:00–1:30 PM; Roji Ganguly, Tania Banerjee 2:30–3:00 PM) shows under Lunch break, not as a miss.</p></div>
+        <div class="ps-sh"><span class="k">Task 1</span><h2>Fresh enquiries and the 5-minute call</h2><p>Fresh enquiry: Inbound or Outbound lead created from 6:30 PM the day before to 6:30 PM on the day. In office hours (10:00 AM–6:30 PM) the first call is due within 5 minutes; overnight leads are due by 12 noon. Lunch breaks are not counted against anyone: a lead that arrives in its owner's break (Sangita Biswas, Rima Debnath, Mahuya Das, Pallabi Majumdar 1:00–1:30 PM; Riya Kundu 1:30–2:00 PM; Roji Ganguly, Tania Banerjee 2:30–3:00 PM) shows under Lunch break, not as a miss.</p></div>
         <div class="ps-kpis">
           <div class="ps-kpi violet"><span class="ps-kpi-label">Fresh enquiries</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="fresh_enquiries">—</span><span class="ps-kpi-sub">6:30 PM to 6:30 PM</span></div>
           <div class="ps-kpi blue"><span class="ps-kpi-label">In office hours</span><span class="ps-kpi-val" data-source="fresh_by_owner" data-where="owner=Team" data-field="office_hours">—</span><span class="ps-kpi-sub">10:00 AM–6:30 PM</span></div>
@@ -583,10 +583,11 @@
     fn: (fresh_all, fresh_nc, fresh_ok, fresh_leads) => {
       // Office hours 10:00 AM–6:30 PM IST: IST hour 10–17, or IST hour 18 with UTC hour 12 (18:00–18:29).
       const office = (r) => Number(r.hi) >= 10 && (Number(r.hi) <= 17 || (Number(r.hi) === 18 && Number(r.hu) === 12));
-      // Lunch breaks (Mahuya, 24 Oct 2026): 1:00–1:30 PM IST = IST hour 13 with UTC hour 7; 2:30–3:00 PM IST = IST hour 14 with UTC hour 9.
+      // Lunch breaks (Mahuya, 24 Oct 2026), matched on the owner's first name (Mahuya Das only, not Mahuya Dutta).
+      // As IST hour + UTC hour: 1:00–1:30 PM = 13/7, 1:30–2:00 PM = 13/8, 2:30–3:00 PM = 14/9.
       // A lead arriving in its own owner's break is not a 5-minute miss: it is counted apart and left out of the SOP.
-      const LUNCH = { 'Sangita Biswas': [13, 7], 'Rima Debnath': [13, 7], 'Mahuya Das': [13, 7], 'Roji Ganguly': [14, 9], 'Tania Banerjee': [14, 9] };
-      const lunch = (r) => { const b = LUNCH[r.o]; return !!b && Number(r.hi) === b[0] && Number(r.hu) === b[1]; };
+      const LUNCH = [[/^(sangita|rima|mahuya das|pallabi)( |$)/i, [13, 7]], [/^riya( |$)/i, [13, 8]], [/^(roji|tania)( |$)/i, [14, 9]]];
+      const lunch = (r) => { const m = LUNCH.find(([re]) => re.test(String(r.o || '').trim())); return !!m && Number(r.hi) === m[1][0] && Number(r.hu) === m[1][1]; };
       const by = {};
       const row = (o) => (by[o || 'Unassigned'] = by[o || 'Unassigned'] || { fresh_enquiries: 0, office_hours: 0, within_5_min: 0, not_called: 0, lunch_break: 0, overnight: 0 });
       fresh_all.forEach((r) => { const o = row(r.o); const n = Number(r.n); o.fresh_enquiries += n; if (lunch(r)) o.lunch_break += n; else if (office(r)) o.office_hours += n; else o.overnight += n; });
@@ -628,8 +629,8 @@
     fn: (fresh_missed_rows) => {
       const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
       // Lunch breaks (IST): not counted as misses.
-      const LUNCH = { 'Sangita Biswas': ['13:00', '13:30'], 'Rima Debnath': ['13:00', '13:30'], 'Mahuya Das': ['13:00', '13:30'], 'Roji Ganguly': ['14:30', '15:00'], 'Tania Banerjee': ['14:30', '15:00'] };
-      return fresh_missed_rows.filter((l) => { const b = LUNCH[l.Owner_Name]; const hm = ist(l.Enquiry_Date__c).slice(11, 16); return !(b && hm >= b[0] && hm < b[1]); }).map((l) => {
+      const LUNCH = [[/^(sangita|rima|mahuya das|pallabi)( |$)/i, ['13:00', '13:30']], [/^riya( |$)/i, ['13:30', '14:00']], [/^(roji|tania)( |$)/i, ['14:30', '15:00']]];
+      return fresh_missed_rows.filter((l) => { const m = LUNCH.find(([re]) => re.test(String(l.Owner_Name || '').trim())); const hm = ist(l.Enquiry_Date__c).slice(11, 16); return !(m && hm >= m[1][0] && hm < m[1][1]); }).map((l) => {
         const c = ist(l.Enquiry_Date__c);
         const tat = l.TAT_of_Lead_Creation_to1st_Conn_in_min__c === null || l.TAT_of_Lead_Creation_to1st_Conn_in_min__c === undefined || !l.First_Call_Date_Time__c ? null : Math.round(Number(l.TAT_of_Lead_Creation_to1st_Conn_in_min__c));
         return { lead_id: l.Id, owner: l.Owner_Name || 'Unassigned', client: l.Name || '', created_on: c.slice(0, 10), created_at: c.slice(11, 16), minutes_to_first_call: tat, result: tat === null ? 'Not called' : tat + ' min', source: l.Sub_source_Text__c || l.Inq_pkl_Source__c || '' };
