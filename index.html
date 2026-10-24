@@ -1129,19 +1129,33 @@
     LOADSTATE[id] = busy ? 'busy' : d.status;
     return d;
   };
+  let PENDING = '';
+  const liveSources = () => { const laOpen = !!(document.getElementById('la') && document.getElementById('la').firstElementChild); return SOURCES.filter((id) => laOpen || id.indexOf('la_') !== 0); };
   const SOURCES = ['day', 'fresh_leads', 'fresh_all', 'fresh_nc', 'fresh_ok', 'fresh_missed_rows', 'fresh_tat', 'la_leads', 'la_projects', 'calls_sum', 'conn_sum', 'reconnect', 'att_calls_daily', 'att_fresh_daily', 'calls', 'status_history', 'team',
     'tasks_roji', 'tasks_mahuya_das', 'tasks_sangita', 'tasks_rima', 'tasks_tania', 'att_roji', 'att_mahuya_das', 'att_sangita', 'att_rima', 'att_tania'];
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest('.ps-refresh-now');
     if (!b) return;
-    SOURCES.filter((id) => id in LOADSTATE).forEach((id) => { try { dash.refresh(id); } catch (e) { /* a source the page hasn't loaded */ } });
+    // Every Salesforce source, including those the page only reads through a calculation (tasks, calls, status history);
+    // the Lead analysis sources only once that tab has been opened.
+    liveSources().forEach((id) => { try { dash.refresh(id); } catch (e) { /* not available in this view */ } });
+    PENDING = 'requested';
+    showPulled();
+    setTimeout(() => { if (PENDING === 'requested') { PENDING = ''; PULLED = new Date(); showPulled(); } }, 20000);
     b.disabled = true;
     setTimeout(() => { b.disabled = false; }, 5000);
   });
   const showPulled = () => {
     const el = document.querySelector('.ps-refreshed');
     if (!el) return;
-    const busy = Object.keys(LOADSTATE).some((k) => LOADSTATE[k] === 'busy');
+    let busy = Object.keys(LOADSTATE).some((k) => LOADSTATE[k] === 'busy');
+    if (PENDING) {
+      // After Refresh now: stamp the time once every Salesforce source has come back.
+      const srcBusy = liveSources().some((id) => { const d = dash.data(id); return d.status === 'loading' || !!d.refreshing; });
+      if (srcBusy) PENDING = 'busy';
+      else if (PENDING === 'busy') { PENDING = ''; PULLED = new Date(); }
+      busy = busy || !!PENDING;
+    }
     el.replaceChildren();
     if (!PULLED) { el.textContent = 'Salesforce data: loading…'; return; }
     const t = PULLED.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
