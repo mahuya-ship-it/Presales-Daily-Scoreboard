@@ -271,10 +271,9 @@
       <section class="ps-screen t6" id="la" role="tabpanel" aria-labelledby="tab-la" hidden></section>
       <template id="tpl-la">
         <div class="ps-sh"><span class="k">Lead analysis</span><h2>Presales lead analysis – <span class="ps-la-proj-name">—</span>, <span class="ps-day">—</span></h2>
-          <p>Leads by Created Date (Considered for Report) in the period, Enquiry type Inbound, Outbound or blank, for the chosen project. For Registered, Site Visit Done and Converted leads the owner is taken from Presales User with AI, or Presales User when that is blank. Only the presales team is counted: Roji Ganguly, Rudra Dutta Roy, Mahuya Das, Sangita Biswas, Rima Debnath, Tania Banerjee, Riya Kundu, Pallabi Majumder. Duplicate mobile numbers keep one lead by status priority (Converted 1, Site Visit Done 2, Registered 3, Requirement Qualified 4, Semi Qualified 5, Follow-up 6, Closed Lost 7, New 8); on a tie the latest created lead is kept.</p></div>
+          <p>Leads by Created Date (Considered for Report) in the period, Enquiry type Inbound, Outbound or blank, for the chosen project. For Registered, Site Visit Done and Converted leads the owner is taken from Presales User with AI, or Presales User when that is blank. Only the presales team is counted: Roji Ganguly, Rudra Dutta Roy, Mahuya Das, Sangita Biswas, Rima Debnath, Tania Banerjee, Riya Kundu, Pallabi Majumder. Duplicate mobile numbers keep one lead by status priority (Converted 1, Site Visit Done 2, Registered 3, Requirement Qualified 4, Semi Qualified 5, Follow-up 6, Closed Lost 7, New 8); on a tie the latest created lead is kept. Follow-up leads are shown by their last call result (e.g. Follow-up · Call Not Received).</p></div>
         <div class="ps-card"><div class="ps-la-bar">
           <label>Project<select class="ps-la-proj" data-source="la_projects" aria-label="Project"></select></label>
-          <label>Source view<select class="ps-la-srcmode" aria-label="Source view"><option value="source">Source</option><option value="sub_source">Sub-source</option></select></label>
           <span class="ps-la-chips">Enquiry type: Inbound · Outbound · Blank</span>
         </div><p class="ps-note ps-la-status" role="status"></p></div>
         <div class="ps-kpis">
@@ -284,9 +283,10 @@
           <div class="ps-kpi gold"><span class="ps-kpi-label">Qualified</span><span class="ps-kpi-val" data-source="la_summary" data-field="qualified" data-row="0">—</span><span class="ps-kpi-sub">Req. Qualified + Semi Qualified</span></div>
           <div class="ps-kpi bad"><span class="ps-kpi-label">Closed Lost</span><span class="ps-kpi-val" data-source="la_summary" data-field="closed_lost" data-row="0">—</span><span class="ps-kpi-sub">of presales leads</span></div>
         </div>
-        <div class="ps-card"><div class="ps-card-h"><h3>Lead owner-wise</h3><button type="button" class="ps-tbl-export" data-table="la-owner-table" data-name="Lead_analysis_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click any heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="la-owner-table" data-source="la_by_owner" data-row-key="key"></table></div></div>
-        <div class="ps-card"><div class="ps-card-h"><h3 class="ps-la-src-h">Source-wise</h3><button type="button" class="ps-tbl-export" data-table="la-source-table" data-name="Lead_analysis_by_source">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="la-source-table" data-source="la_by_source" data-row-key="key"></table></div></div>
-        <div class="ps-card"><div class="ps-card-h"><h3>Call result-wise</h3><button type="button" class="ps-tbl-export" data-table="la-result-table" data-name="Lead_analysis_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Last Activity Call Result on the lead.</p><div class="ps-scroll tall"><table class="ps-t" id="la-result-table" data-source="la_by_result" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Lead owner vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-owner-table" data-name="Lead_analysis_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click any heading to sort: ▼ highest first, ▲ lowest first.</p><div class="ps-scroll"><table class="ps-t" id="la-owner-table" data-source="la_by_owner" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-source-table" data-name="Lead_analysis_by_source">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="la-source-table" data-source="la_by_source" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-subsource-table" data-name="Lead_analysis_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="la-subsource-table" data-source="la_by_subsource" data-row-key="key"></table></div></div>
+        <div class="ps-card"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="la-result-table" data-name="Lead_analysis_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Last Activity Call Result on the lead.</p><div class="ps-scroll tall"><table class="ps-t" id="la-result-table" data-source="la_by_result" data-row-key="key"></table></div></div>
       </template>
 
       <!-- Team & birthdays -->
@@ -918,7 +918,7 @@
 
   dash.calc('la_clean', {
     title: 'Presales leads (owner fixed, duplicates removed)',
-    description: 'Each lead of the project and period: owner = Presales User with AI (else Presales User) for Registered, Site Visit Done and Converted; only presales owners kept; one lead per mobile number by status priority (Converted 1 … Closed Lost 7, New 8), latest created on a tie.',
+    description: 'Each lead of the project and period: owner = Presales User with AI (else Presales User) for Registered, Site Visit Done and Converted; only presales owners kept; one lead per mobile number by status priority (Converted 1 … Closed Lost 7, New 8), latest created on a tie. Follow-up leads are reported under their last call result.',
     inputs: ['la_leads'],
     fn: (la_leads) => {
       const TEAM = [['Roji Ganguly', /^roji( |$)/i], ['Rudra Dutta Roy', /^rudra( |$)/i], ['Mahuya Das', /^mahuya das( |$)/i], ['Sangita Biswas', /^sangita( |$)/i], ['Rima Debnath', /^rima( |$)/i], ['Tania Banerjee', /^tania( |$)/i], ['Riya Kundu', /^riya( |$)/i], ['Pallabi Majumder', /^pallabi( |$)/i]];
@@ -938,6 +938,7 @@
         if (!o) return;
         const mob = String(l.mobile_no_converted_format_normal__c || l.MobilePhone || '').replace(/[^0-9]/g, '').slice(-10);
         rows.push({ lead_id: l.Id, client: l.Name || '', owner: o, owner_from: from, status: l.Status || '', rank: RANK[l.Status] || 9, mobile: mob, source: l.Inq_pkl_Source__c || '(blank)', sub_source: l.Sub_source_Text__c || '(blank)', call_result: l.Last_Activity_Call_Result__c || '(no call result)', created: ist(l.Enquiry_Date__c).slice(0, 16).replace('T', ' '), enquiry_type: l.Enquiry_Type__c || '(blank)', kept: 'Yes' });
+        rows[rows.length - 1].report_status = RANK[l.Status] === 6 ? 'Follow-up · ' + (l.Last_Activity_Call_Result__c || 'no call result') : l.Status || '';
       });
       const best = {};
       rows.forEach((r) => {
@@ -962,12 +963,15 @@
   });
 
   const laGroup = (field, label) => (la_clean) => {
-    const COLS = [['converted', 1], ['site_visit_done', 2], ['registered', 3], ['req_qualified', 4], ['semi_qualified', 5], ['follow_up', 6], ['closed_lost', 7], ['new_other', 8]];
-    const blank = () => { const o = { leads: 0 }; COLS.forEach(([c]) => { o[c] = 0; }); return o; };
+    // Follow-up leads are shown by their last call result (Mahuya, 24 Oct 2026): column 'fu:<call result>'.
+    const COLS = [['converted', 1], ['site_visit_done', 2], ['registered', 3], ['req_qualified', 4], ['semi_qualified', 5], ['closed_lost', 7], ['new_other', 8]];
+    const kept = la_clean.filter((r) => r.kept === 'Yes');
+    const FU = [...new Set(kept.filter((r) => r.rank === 6).map((r) => 'fu:' + r.call_result))];
+    const blank = () => { const o = { leads: 0 }; COLS.forEach(([c]) => { o[c] = 0; }); FU.forEach((c) => { o[c] = 0; }); return o; };
     const by = {}, tot = blank();
-    la_clean.filter((r) => r.kept === 'Yes').forEach((r) => {
+    kept.forEach((r) => {
       const g = (by[r[field]] = by[r[field]] || blank());
-      const col = (COLS.find(([, n]) => n === r.rank) || COLS[7])[0];
+      const col = r.rank === 6 ? 'fu:' + r.call_result : (COLS.find(([, n]) => n === r.rank) || COLS[6])[0];
       g.leads += 1; g[col] += 1; tot.leads += 1; tot[col] += 1;
     });
     const fin = (key, o) => ({ key, [label]: key, ...o, registered_plus: o.converted + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted + o.site_visit_done + o.registered) / o.leads : null });
@@ -1060,7 +1064,6 @@
       document.getElementById('la').appendChild(document.getElementById('tpl-la').content.cloneNode(true));
       const sel = document.querySelector('.ps-la-proj');
       sel.addEventListener('change', () => { if (!sel.value) return; const c = cur(); dash.setParams(window.psBuildParams(c.from, c.to, !!dash.params().all, sel.value)); });
-      document.querySelector('.ps-la-srcmode').addEventListener('change', () => draw());
     }
     document.querySelectorAll('.ps-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.screen === id)));
     SCREENS.forEach((s) => { document.getElementById(s).hidden = s !== id; });
@@ -1338,27 +1341,28 @@
       const lst = document.querySelector('.ps-la-status');
       const ld = st('la_leads');
       lst.textContent = ld.status === 'loading' || ld.refreshing ? 'Loading leads from Salesforce… long periods (All time) can take a minute.' : sm && sm[0] ? fmtN(sm[0].read) + ' leads read for this project and period; ' + fmtN(sm[0].presales) + ' with a presales owner; ' + fmtN(sm[0].duplicates) + ' duplicates removed.' + (ld.cut ? ' Very long period: only the first 60,000 leads were read.' : '') : '';
-      const STC = [
+      const STC0 = [
         { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) },
         { f: 'converted', label: 'Converted', fmt: (v) => fmtN(v) },
         { f: 'site_visit_done', label: 'SV Done', fmt: (v) => fmtN(v) },
         { f: 'registered', label: 'Registered', fmt: (v) => fmtN(v) },
         { f: 'req_qualified', label: 'Req. Qualified', fmt: (v) => fmtN(v) },
-        { f: 'semi_qualified', label: 'Semi Qualified', fmt: (v) => fmtN(v) },
-        { f: 'follow_up', label: 'Follow-up', fmt: (v) => fmtN(v) },
+        { f: 'semi_qualified', label: 'Semi Qualified', fmt: (v) => fmtN(v) }
+      ];
+      const fuCols = (rows) => { const tot = (rows || []).find((r) => r.key === 'Total') || {}; return Object.keys(tot).filter((k) => k.indexOf('fu:') === 0).sort((a, b) => tot[b] - tot[a]).map((k) => ({ f: k, label: 'Follow-up · ' + k.slice(3), fmt: (v) => fmtN(v || 0) })); };
+      const STC1 = [
         { f: 'closed_lost', label: 'Closed Lost', fmt: (v) => fmtN(v) },
         { f: 'new_other', label: 'New / other', fmt: (v) => fmtN(v) },
         { f: 'registered_plus', label: 'Registered+', fmt: (v) => fmtN(v) },
         { f: 'reg_pct', label: 'Registered+ %', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.1 ? 'good' : v >= 0.05 ? 'warn' : 'bad') }
       ];
+      const STC = (id) => STC0.concat(fuCols(okRows(id)), STC1);
       const opt = (empty) => ({ key: 'key', rowClass: (r) => (r.key === 'Total' ? 'team' : ''), empty, sortable: true, pin: (r) => r.key === 'Total' });
-      table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC), okRows('la_by_owner'), opt('No presales leads for this project and period.'));
-      const sub = document.querySelector('.ps-la-srcmode').value === 'sub_source';
-      document.querySelector('.ps-la-src-h').textContent = sub ? 'Sub-source-wise' : 'Source-wise';
-      const srcTbl = document.getElementById('la-source-table');
-      srcTbl.dataset.source = sub ? 'la_by_subsource' : 'la_by_source';
-      table(srcTbl, sub ? 'la_by_subsource' : 'la_by_source', [{ f: sub ? 'sub_source' : 'source', label: sub ? 'Sub-source' : 'Source', cls: 'l' }].concat(STC), okRows(sub ? 'la_by_subsource' : 'la_by_source'), opt('No presales leads for this project and period.'));
-      table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC), okRows('la_by_result'), opt('No presales leads for this project and period.'));
+      const none = 'No presales leads for this project and period.';
+      table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), okRows('la_by_owner'), opt(none));
+      table(document.getElementById('la-source-table'), 'la_by_source', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), okRows('la_by_source'), opt(none));
+      table(document.getElementById('la-subsource-table'), 'la_by_subsource', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), okRows('la_by_subsource'), opt(none));
+      table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), okRows('la_by_result'), opt(none));
     }
 
     if (current === 'task3') {
