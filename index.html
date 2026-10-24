@@ -271,7 +271,7 @@
       <section class="ps-screen t6" id="la" role="tabpanel" aria-labelledby="tab-la" hidden></section>
       <template id="tpl-la">
         <div class="ps-sh"><span class="k">Lead analysis</span><h2>Presales lead analysis – <span class="ps-la-proj-name">—</span>, <span class="ps-day">—</span></h2>
-          <p>Leads by Created Date (Considered for Report) in the period, Enquiry type Inbound, Outbound or blank, for the chosen project. For Registered, Site Visit Done and Converted leads the owner is taken from Presales User with AI, or Presales User when that is blank. Only the presales team is counted: Roji Ganguly, Rudra Dutta Roy, Mahuya Das, Sangita Biswas, Rima Debnath, Tania Banerjee, Riya Kundu, Pallabi Majumder. Duplicate mobile numbers keep one lead by status priority (Converted 1, Site Visit Done 2, Registered 3, Requirement Qualified 4, Semi Qualified 5, Follow-up 6, Closed Lost 7, New 8); on a tie the latest created lead is kept. Follow-up leads are shown by their last call result (e.g. Follow-up · Call Not Received).</p></div>
+          <p>Leads by Created Date (Considered for Report) in the period, Enquiry type Inbound, Outbound or blank, Source not Channel Partner, for the chosen project. For Registered, Site Visit Done and Converted leads the owner is taken from Presales User with AI, or Presales User when that is blank. Only the presales team is counted: Roji Ganguly, Rudra Dutta Roy, Mahuya Das, Sangita Biswas, Rima Debnath, Tania Banerjee, Riya Kundu, Pallabi Majumder. Duplicate mobile numbers keep one lead by status priority (Converted 1, Site Visit Done 2, Registered 3, Requirement Qualified 4, Semi Qualified 5, Follow-up 6, Closed Lost 7, New 8); on a tie the latest created lead is kept. Follow-up leads are shown by their last call result (e.g. Follow-up · Call Not Received).</p></div>
         <div class="ps-card"><div class="ps-la-bar">
           <label>Project<select class="ps-la-proj" data-source="la_projects" aria-label="Project"></select></label>
           <span class="ps-la-chips">Enquiry type: Inbound · Outbound · Blank</span>
@@ -355,7 +355,7 @@
     // Lead analysis: one project, created (Considered for Report) in the period, Enquiry type Inbound/Outbound/blank. The loader follows the pages.
     const proj = String(project || (dash.params() && dash.params().project) || 'NEW KOLKATA - SANGAM');
     p.project = proj;
-    const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
+    const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
     p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
