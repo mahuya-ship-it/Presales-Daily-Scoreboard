@@ -12,6 +12,10 @@
     display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; justify-content: space-between;
     border-bottom: 4px solid var(--gold); position: relative; overflow: hidden;
   }
+  .ps-refreshed { position: absolute; top: 8px; right: var(--cds-pad-xl); margin: 0; z-index: 1; font-size: var(--cds-font-size-caption); color: rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .12); border: 1px solid rgba(239, 204, 37, .55); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .ps-refreshed b { color: var(--gold); font-weight: 700; }
+  .ps-band { padding-top: calc(var(--cds-pad-lg) + 18px); }
+  @media (max-width: 640px) { .ps-refreshed { position: static; order: -1; width: 100%; white-space: normal; } .ps-band { padding-top: var(--cds-pad-lg); } }
   .ps-band::after { content: ""; position: absolute; right: -60px; top: -80px; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 204, 37, .28), rgba(239, 204, 37, 0) 70%); pointer-events: none; }
   .ps-brand { font-size: var(--cds-font-size-caption); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
   .ps-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 2px 0 0; color: #fff; text-wrap: balance; }
@@ -148,6 +152,7 @@
 
 <div class="ps">
   <header class="ps-band" id="top">
+    <p class="ps-refreshed" role="status" title="When this page last finished pulling data from Salesforce">Salesforce data: loading…</p>
     <div>
       <div class="ps-brand">Alcove Realty · New Kolkata presales</div>
       <h1 class="ps-title">Presales <span>Daily Scorecard</span></h1>
@@ -1110,7 +1115,27 @@
   const fmtP = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : d3.format('.0%')(v));
   const fmtDay = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const hm12 = (s) => { if (!s) return ''; const [h, m] = String(s).split(':').map(Number); return ((h + 11) % 12 + 1) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' AM' : ' PM'); };
-  const st = (id) => dash.data(id);
+  // Pull time (Mahuya, 24 Oct 2026): the moment the latest source finished loading from Salesforce, shown top right.
+  const LOADSTATE = {};
+  let PULLED = null;
+  const st = (id) => {
+    const d = dash.data(id);
+    const busy = d.status === 'loading' || !!d.refreshing;
+    if (d.status === 'ok' && !busy && (LOADSTATE[id] === 'busy' || LOADSTATE[id] === undefined)) PULLED = new Date();
+    LOADSTATE[id] = busy ? 'busy' : d.status;
+    return d;
+  };
+  const showPulled = () => {
+    const el = document.querySelector('.ps-refreshed');
+    if (!el) return;
+    const busy = Object.keys(LOADSTATE).some((k) => LOADSTATE[k] === 'busy');
+    el.replaceChildren();
+    if (!PULLED) { el.textContent = 'Salesforce data: loading…'; return; }
+    const t = PULLED.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    el.append('Salesforce data pulled: ');
+    const b = document.createElement('b'); b.textContent = t + ' IST'; el.appendChild(b);
+    if (busy) el.append(' · refreshing…');
+  };
   const okRows = (id) => { const d = st(id); return d.status === 'ok' && Array.isArray(d.data) ? d.data : null; };
   const failed = (id) => ['error', 'connect', 'declined', 'missing'].indexOf(st(id).status) >= 0;
   const fail = (el) => { el.replaceChildren(); const p = document.createElement('div'); p.className = 'ps-fail'; p.textContent = 'Failed to load'; el.appendChild(p); };
@@ -1804,7 +1829,7 @@
   // Each part draws on its own, so one failing part doesn't blank the rest; the first error is still reported.
   dash.onData(() => {
     let err = null;
-    [draw, drawAttendance, drawTeam].forEach((f) => { try { f(); } catch (e) { err = err || e; } });
+    [draw, drawAttendance, drawTeam, showPulled].forEach((f) => { try { f(); } catch (e) { err = err || e; } });
     if (err) throw err;
   });
   document.querySelectorAll('.ps-tab').forEach((b) => b.addEventListener('click', () => { drawAttendance(); drawTeam(); }));
