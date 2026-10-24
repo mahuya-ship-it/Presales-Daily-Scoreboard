@@ -98,7 +98,8 @@
   .ps-t td a { color: var(--navy); text-underline-offset: 2px; }
   .ps-t td a:hover { color: var(--gold); }
   .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
-  .ps-la-drill[hidden] { display: none; }
+  .ps-la-drill[hidden], .ps-pr-drill[hidden] { display: none; }
+  .ps-pr-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-t td.ps-wrap { white-space: normal; min-width: 180px; max-width: 320px; }
   .ps-drill-close { font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
   .ps-tbl-export:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -257,7 +258,8 @@
           <div class="ps-card" id="priority-chart-card"><h3>Called vs target by executive</h3><div class="ps-legend"><span><i style="background: var(--t3)"></i>Called</span><span><i style="background: var(--cds-chart-muted)"></i>Not called</span></div><div class="ps-chart" id="priority-chart" data-source="priority_by_exec"></div></div>
           <div class="ps-card"><h3>Effectiveness</h3><p class="ps-note">Priority leads whose status moved up that day, Closed Lost, and hot leads reconnected.</p><div class="ps-scroll"><table class="ps-t" id="effect-table" data-source="priority_by_exec" data-row-key="executive"></table></div></div>
         </div>
-        <div class="ps-card"><h3>Segregation by priority (called / target)</h3><div class="ps-scroll"><table class="ps-t" id="priority-table" data-source="priority_by_exec" data-row-key="executive"></table></div></div>
+        <div class="ps-card"><h3>Segregation by priority (called / target)</h3><div class="ps-scroll"><table class="ps-t" id="priority-table" data-source="priority_by_exec" data-row-key="executive"></table></div><p class="ps-note">Click a P1–P4 or Not called figure to see the leads that were not called.</p></div>
+        <div class="ps-card ps-pr-drill" hidden><div class="ps-card-h"><h3 class="ps-pr-drill-h">Leads not called</h3><span><button type="button" class="ps-tbl-export" data-table="pr-drill-table" data-name="Priority_leads_not_called">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Click a customer name to open the lead in Salesforce, or a number to call.</p><div class="ps-scroll tall"><table class="ps-t" id="pr-drill-table" data-source="priority_leads" data-row-key="lead_id"></table></div></div>
         <div class="ps-card"><h3>Hot leads (P1/P2) not called</h3><p class="ps-note">Present executives only, in morning-list order.</p><div class="ps-scroll tall"><table class="ps-t" id="hot-table" data-source="priority_leads" data-row-key="lead_id"></table></div></div>
       </section>
 
@@ -337,7 +339,7 @@
     // The last clause is always true; it carries the period's start to the loader, which reports From and To beside the day's count.
     p.q_day = 'SELECT DAY_ONLY(convertTimezone(CreatedDate)) d, COUNT(Id) n FROM Task WHERE CreatedDate >= ' + T0 + ' AND CreatedDate < ' + T1 + ' AND CreatedDate >= ' + R0 + ' GROUP BY DAY_ONLY(convertTimezone(CreatedDate))';
     Object.entries(IDS).forEach(([k, id]) => {
-      p['q_tasks_' + k] = "SELECT Id, WhoId, OwnerId, Subject, CallDisposition, CreatedDate, ActivityDate, TYPEOF Who WHEN Lead THEN Name, Status, Enquiry_Date__c, Last_Activity_Call_Result__c END FROM Task WHERE OwnerId = '" + id + "' AND ActivityDate <= " + D + ' AND CreatedDate < ' + T0 + ' AND WhoId != null AND (IsClosed = false OR LastModifiedDate >= ' + T0 + ') ORDER BY Id LIMIT 2000';
+      p['q_tasks_' + k] = "SELECT Id, WhoId, OwnerId, Subject, CallDisposition, CreatedDate, ActivityDate, TYPEOF Who WHEN Lead THEN Name, Status, Enquiry_Date__c, Last_Activity_Call_Result__c, mobile_no_converted_format_normal__c END FROM Task WHERE OwnerId = '" + id + "' AND ActivityDate <= " + D + ' AND CreatedDate < ' + T0 + ' AND WhoId != null AND (IsClosed = false OR LastModifiedDate >= ' + T0 + ') ORDER BY Id LIMIT 2000';
       p['q_att_' + k] = "SELECT WhoId, COUNT_DISTINCT(CreatedDate) a FROM Task WHERE OwnerId = '" + id + "' AND Subject IN " + CALLSUBJ + ' AND CallDisposition != null AND CreatedDate < ' + T0 + " AND WhoId IN (SELECT Id FROM Lead WHERE OwnerId = '" + id + "' AND (Status = 'Follow-up' OR LastModifiedDate >= " + T0 + ')) GROUP BY WhoId';
     });
     p.q_calls = 'SELECT Id, WhoId, OwnerId, Subject, CallDisposition, CreatedDate FROM Task WHERE OwnerId IN ' + ALL + ' AND Subject IN ' + CALLSUBJ + ' AND CallDisposition != null AND CreatedDate >= ' + T0 + ' AND CreatedDate < ' + T1 + ' ORDER BY Id LIMIT 2000';
@@ -575,7 +577,7 @@
         seen[t.Id] = 1;
         const w = t.WhoId;
         if (!EX[t.OwnerId] || !w || !t.Who_Status) return;
-        L[w] = { name: t.Who_Name || '', status: morning[w] || t.Who_Status, last: t.Who_Last_Activity_Call_Result__c || '', enq: t.Who_Enquiry_Date__c || '' };
+        L[w] = { name: t.Who_Name || '', status: morning[w] || t.Who_Status, last: t.Who_Last_Activity_Call_Result__c || '', enq: t.Who_Enquiry_Date__c || '', mobile: String(t.Who_mobile_no_converted_format_normal__c || '').replace(/[^0-9]/g, '').slice(-10) };
         if (t.ActivityDate === RD) {
           if (ist(t.CreatedDate).slice(0, 10) >= RD) return;
           if (['Call Back', 'Reconnect with Customer.', 'Follow-Up For Site Visit'].indexOf(t.Subject) < 0) return;
@@ -622,7 +624,7 @@
             achieved_by: res.length ? 'Call' : regToday ? 'Registered today' : lostToday ? 'Closed Lost today' : '',
             connected: res.some((v) => NREACH.indexOf(v) < 0 && v !== 'Disconnected') ? 'Yes' : 'No',
             new_status: f && rank(f) < rank(x.status) ? UP[f] || f : '', closed_lost: f === 'Closed Lost' && x.status !== 'Closed Lost' ? 'Yes' : 'No',
-            from_hot: x.pr <= 2 ? 'Yes' : 'No', report_date: RD
+            from_hot: x.pr <= 2 ? 'Yes' : 'No', report_date: RD, mobile: (L[x.w] || {}).mobile || '', last_result: (L[x.w] || {}).last || ''
           });
         });
       });
@@ -1150,8 +1152,45 @@
 
   // Generic table: cols = [{f, label, fmt, cls, chip}]; opts.sortable adds ▲▼ sorting by heading, opts.pin keeps rows (e.g. Team) last.
   const SORT = {};
-  let LA_DRILL = null;
+  let LA_DRILL = null, PR_DRILL = null;
+  const drawPrDrill = () => {
+    const card = document.querySelector('.ps-pr-drill');
+    if (!card) return;
+    const d = PR_DRILL, pl = okRows('priority_leads'), pr = okRows('priority_by_exec');
+    if (!d || !pl || !pr) { card.hidden = true; return; }
+    const present = pr.filter((r) => r.attendance === 'Present').map((r) => r.executive);
+    const list = pl.filter((x) => x.called === 'No' && (d.exec === 'Team (present)' ? present.indexOf(x.executive) >= 0 : x.executive === d.exec) && (!d.p || x.priority === d.p));
+    card.hidden = false;
+    card.querySelector('.ps-pr-drill-h').textContent = (d.exec === 'Team (present)' ? 'Team' : d.exec) + ' · ' + (d.p || 'All priorities') + ' not called – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
+    table(document.getElementById('pr-drill-table'), 'priority_leads', [
+      { f: 'executive', label: 'Executive', cls: 'l' },
+      { f: 'client', label: 'Customer', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
+      { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
+      { f: 'sub_priority', label: 'Priority', cls: 'l', chip: (v) => (String(v).startsWith('P1') ? 'bad' : String(v).startsWith('P2') ? 'warn' : 'muted') },
+      { f: 'morning_status', label: 'Status (morning)', cls: 'l' },
+      { f: 'last_result', label: 'Last call result', cls: 'l' },
+      { f: 'days_overdue', label: 'Days overdue', fmt: (v) => fmtN(v || 0) }
+    ], list, { key: 'lead_id', empty: 'Every lead in this group was called.' });
+  };
+  // Mahuya (24 Oct 2026): every table gets sort arrows and an Export button.
+  const addExport = (el) => {
+    const card = el.closest('.ps-card');
+    if (!card || !el.id || card.querySelector('.ps-tbl-export[data-table="' + el.id + '"]')) return;
+    const h3 = card.querySelector('h3');
+    if (!h3) return;
+    let hd = h3.parentElement;
+    if (!hd.classList.contains('ps-card-h')) { hd = document.createElement('div'); hd.className = 'ps-card-h'; h3.replaceWith(hd); hd.appendChild(h3); }
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ps-tbl-export'; b.dataset.table = el.id;
+    b.dataset.name = (h3.textContent.trim() || el.id).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    b.title = 'Download this table as an Excel file, in the order shown'; b.textContent = '⤓ Export';
+    hd.appendChild(b);
+    if (!card.querySelector('.ps-tbl-msg')) { const m = document.createElement('p'); m.className = 'ps-tbl-msg ps-note'; m.setAttribute('role', 'status'); m.hidden = true; hd.after(m); }
+  };
   const table = (el, id, cols, rows, opts = {}) => {
+    addExport(el);
+    if (opts.sortable === undefined) opts = { ...opts, sortable: true };
+    if (!opts.pin) { const c0 = cols[0] && cols[0].f; opts = { ...opts, pin: (r) => r.key === 'Total' || r.attendance === 'Team' || /^(team|total)( |$)/i.test(String((c0 && r[c0]) || '')) || (!!opts.rowClass && / ?team( |$)/.test(' ' + opts.rowClass(r))) }; }
     el.replaceChildren();
     if (failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
     const s = opts.sortable ? SORT[el.id] : null;
@@ -1164,7 +1203,7 @@
         th.appendChild(a); th.classList.add('ps-sortable'); th.tabIndex = 0;
         th.title = 'Sort by ' + c.label + (on ? (s.dir === 'asc' ? ' (lowest first)' : ' (highest first)') : '');
         th.setAttribute('aria-sort', on ? (s.dir === 'asc' ? 'ascending' : 'descending') : 'none');
-        const go = () => { SORT[el.id] = { f: c.f, dir: on && s.dir === 'desc' ? 'asc' : 'desc' }; draw(); };
+        const go = () => { SORT[el.id] = { f: c.f, dir: on && s.dir === 'desc' ? 'asc' : 'desc' }; draw(); drawAttendance(); drawTeam(); };
         th.addEventListener('click', go);
         th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
       }
@@ -1191,7 +1230,7 @@
         const text = c.fmt ? c.fmt(v, r) : v === null || v === undefined || v === '' ? '—' : String(v);
         if (c.chip) chip(td, text, c.chip(v, r));
         else if (c.link && c.link(v, r)) { const a = document.createElement('a'); a.href = c.link(v, r); a.target = '_blank'; a.rel = 'noopener'; a.textContent = text; td.appendChild(a); }
-        else if (opts.drill && opts.drill.can(r, c)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ps-drill'; b.textContent = text; b.title = 'Show these ' + text + ' leads'; b.addEventListener('click', () => opts.drill.open(r, c)); td.appendChild(b); }
+        else if (opts.drill && opts.drill.can(r, c)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ps-drill'; b.textContent = text; b.title = opts.drill.title ? opts.drill.title(r, c) : 'Show these ' + text + ' leads'; b.addEventListener('click', () => opts.drill.open(r, c)); td.appendChild(b); }
         else td.textContent = text;
       });
     });
@@ -1251,13 +1290,29 @@
   const STATUS_CHIP = { 'Present': 'good', 'Allocated, no calls': 'warn', 'Absent': 'bad', 'Upcoming': 'muted' };
   const SHORT = { 'Present': 'Present', 'Allocated, no calls': 'Allocated', 'Absent': 'Absent', 'Upcoming': '·' };
   const roster = (el, rows) => {
+    addExport(el);
     el.replaceChildren();
     if (failed('roster_week')) { const td = el.createTBody().insertRow().insertCell(); td.colSpan = 11; fail(td); return; }
-    const D = dash.params().date;
+    const D = dash.params().date || dash.params().to || window.psToday();
     const dow = new Date(D + 'T00:00:00Z').getUTCDay();
     const mon = window.psShift(D, -((dow + 6) % 7));
     const head = el.createTHead().insertRow();
-    const th = (t, f, cls) => { const h = document.createElement('th'); h.textContent = t; h.dataset.field = f; if (cls) h.className = cls; head.appendChild(h); };
+    const rs = SORT[el.id];
+    const th = (t, f, cls) => {
+      const h = document.createElement('th'); h.textContent = t; h.dataset.field = f; if (cls) h.className = cls;
+      const on = rs && rs.f === f;
+      const a = document.createElement('span'); a.className = 'ps-sort' + (on ? ' on' : ''); a.textContent = on ? (rs.dir === 'asc' ? ' ▲' : ' ▼') : ' ▲▼';
+      h.appendChild(a); h.classList.add('ps-sortable'); h.tabIndex = 0; h.title = 'Sort by ' + t;
+      const go = () => { SORT[el.id] = { f, dir: on && rs.dir === 'desc' ? 'asc' : 'desc' }; drawAttendance(); };
+      h.addEventListener('click', go);
+      h.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      head.appendChild(h);
+    };
+    if (rs && rows) {
+      const pin = (r) => r.executive === 'Team present';
+      const cmp = (a, b) => { const x = a[rs.f], y = b[rs.f]; const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x || '').localeCompare(String(y || ''), 'en', { numeric: true }); return rs.dir === 'asc' ? d : -d; };
+      rows = rows.filter((r) => !pin(r)).sort(cmp).concat(rows.filter(pin));
+    }
     th('Executive', 'executive');
     for (let i = 0; i < 7; i++) { const d = window.psShift(mon, i); th(new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }), 'd' + (i + 1), 'cell'); }
     th('Days present', 'days_present'); th('Allocated, no calls', 'days_allocated_no_calls'); th('Absent', 'days_absent'); th('Calls this week', 'week_calls');
@@ -1476,7 +1531,20 @@
         { f: 'achievement', label: 'Achievement', fmt: (v, r) => (r.attendance === 'Absent' ? 'Absent' : fmtP(v)), chip: (v, r) => (r.attendance === 'Absent' ? 'muted' : v >= 0.7 ? 'good' : v >= 0.4 ? 'warn' : 'bad') },
         { f: 'connected', label: 'Connected', fmt: (v, r) => (r.attendance === 'Absent' ? '—' : fmtN(v)) },
         { f: 'priority_calls', label: 'Calls on these leads', fmt: (v) => fmtN(v) }
-      ], pr, { rowClass: rc });
+      ], pr, {
+        rowClass: rc,
+        drill: {
+          can: (r, c) => r.attendance !== 'Absent' && (c.f === 'not_called' ? r.not_called > 0 : /^p[1-4]_target$/.test(c.f) && r[c.f] - r[c.f.replace('_target', '_called')] > 0),
+          title: (r, c) => 'Show the ' + fmtN(c.f === 'not_called' ? r.not_called : r[c.f] - r[c.f.replace('_target', '_called')]) + ' leads not called',
+          open: (r, c) => {
+            PR_DRILL = { exec: r.executive, p: c.f === 'not_called' ? '' : c.f.slice(0, 2).toUpperCase() };
+            drawPrDrill();
+            const card = document.querySelector('.ps-pr-drill');
+            if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+      drawPrDrill();
       table(document.getElementById('effect-table'), 'priority_by_exec', [
         { f: 'executive', label: 'Executive' },
         { f: 'new_req_qualified', label: 'New Req. Q', fmt: (v) => fmtN(v) },
@@ -1680,10 +1748,12 @@
     return [head].concat(body);
   };
   document.addEventListener('click', (ev) => {
-    if (!ev.target.closest('.ps-drill-close')) return;
-    LA_DRILL = null;
-    const card = document.querySelector('.ps-la-drill');
-    if (card) card.hidden = true;
+    const x = ev.target.closest('.ps-drill-close');
+    if (!x) return;
+    const card = x.closest('.ps-card');
+    if (card.classList.contains('ps-la-drill')) LA_DRILL = null;
+    if (card.classList.contains('ps-pr-drill')) PR_DRILL = null;
+    card.hidden = true;
   });
   document.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('.ps-tbl-export');
@@ -1711,7 +1781,12 @@
     }
   });
 
-  dash.onData(() => { draw(); drawAttendance(); drawTeam(); });
+  // Each part draws on its own, so one failing part doesn't blank the rest; the first error is still reported.
+  dash.onData(() => {
+    let err = null;
+    [draw, drawAttendance, drawTeam].forEach((f) => { try { f(); } catch (e) { err = err || e; } });
+    if (err) throw err;
+  });
   document.querySelectorAll('.ps-tab').forEach((b) => b.addEventListener('click', () => { drawAttendance(); drawTeam(); }));
   show(current);
   drawAttendance();
