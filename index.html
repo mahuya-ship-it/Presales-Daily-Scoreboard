@@ -381,7 +381,7 @@
     p.project = proj;
     const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
-    p.q_la = 'SELECT Id, Name, Status, Owner.Name, Tele_Caller__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
+    p.q_la = 'SELECT Id, Name, LastName, Status, Owner.Name, Previous_Owner__r.Name, Tele_Caller__r.Name, SubSource__r.Name, UTM_Source__c, Primary_Reason__c, Virtual_Number__c, Inq_rltn_Project_Society__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
     // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
     // The query covers the first 200 days (W); the loader asks for the rest up to E in 200-day steps.
@@ -497,7 +497,7 @@
         page = recs(ans); open = more(ans);
         rows = rows.concat(page); n += 1;
       }
-      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c', 'Task_Subject', 'Task_Comment', 'Task_Created', 'Task_FollowUp'];
+      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c', 'LastName', 'Previous_Owner__r_Name', 'SubSource__r_Name', 'UTM_Source__c', 'Primary_Reason__c', 'Virtual_Number__c', 'Inq_rltn_Project_Society__r_Name', 'Task_Subject', 'Task_Comment', 'Task_Created', 'Task_FollowUp'];
       rows.forEach((r) => { const t = (Array.isArray(r.Tasks_records) && r.Tasks_records[0]) || {}; r.Task_Subject = t.Subject || null; r.Task_Comment = t.Comment__c || null; r.Task_Created = t.CreatedDate || null; r.Task_FollowUp = t.Follow_Up_Date_Time__c || null; });
       return { columns: cols, rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] === undefined ? null : r[c]]))), cut, meta: [{ label: 'Salesforce pages', value: String(n) }, { label: 'Leads read', value: String(rows.length) }] };
     }
@@ -975,6 +975,8 @@
         // Requirement / Semi Qualified status as the result; Call Back and Call Back Requested = Call Back Request; every other result as it is.
         const cr = l.Last_Activity_Call_Result__c || '', gr = String(l.Enquiry_Grading__c || '').toUpperCase().replace(/[^Q0-9]/g, '');
         rows[rows.length - 1].grading = l.Enquiry_Grading__c || '';
+        Object.assign(rows[rows.length - 1], { last_name: l.LastName || l.Name || '', project: l.Inq_rltn_Project_Society__r_Name || '', sub_source_pick: l.SubSource__r_Name || '', lead_owner: l.Owner_Name || '', previous_owner: l.Previous_Owner__r_Name || '',
+          utm_source: l.UTM_Source__c || '', primary_reason: l.Primary_Reason__c || '', virtual_number: l.Virtual_Number__c || '', presales_user: l.Tele_Caller__r_Name || '' });
         const pc = aiName ? (aiMode === 'Auto' ? 0.1 : 0.5) : 1;
         Object.assign(rows[rows.length - 1], { ai_member: aiName, ai_mode: aiMode, presales_credit: pc, ai_credit: aiName ? Math.round((1 - pc) * 10) / 10 : 0,
           credit: aiName ? o + ' ' + pc + ' · ' + aiName + ' ' + Math.round((1 - pc) * 10) / 10 + ' (' + aiMode + ')' : o + ' 1' });
@@ -1543,19 +1545,29 @@
         card.hidden = false;
         card.querySelector('.ps-drill-h').textContent = d.title + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
         table(document.getElementById('la-drill-table'), 'la_clean', [
-          { f: 'client', label: 'Customer', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
+          { f: 'created', label: 'Created Date (Considered for Report)', cls: 'l' },
+          { f: 'last_name', label: 'Last Name', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
           { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
-          { f: 'owner', label: 'Presales owner', cls: 'l' },
+          { f: 'project', label: 'Project / Society', cls: 'l' },
+          { f: 'sub_source', label: 'Sub-source(Text)', cls: 'l' },
+          { f: 'sub_source_pick', label: 'Sub-Source', cls: 'l' },
+          { f: 'lead_owner', label: 'Lead Owner', cls: 'l' },
+          { f: 'previous_owner', label: 'Previous Owner', cls: 'l' },
+          { f: 'status', label: 'Lead Status', cls: 'l' },
+          { f: 'utm_source', label: 'UTM Source', cls: 'l' },
+          { f: 'primary_reason', label: 'Primary Reason', cls: 'l' },
+          { f: 'grading', label: 'Enquiry Grading', cls: 'l' },
+          { f: 'virtual_number', label: 'Virtual Number', cls: 'l' },
+          { f: 'presales_user', label: 'Pre Sales User', cls: 'l' },
+          { f: 'enquiry_type', label: 'Enquiry Type', cls: 'l' },
+          { f: 'lead_id', label: 'Lead Id', cls: 'l', link: (v) => (v ? 'https://alcoverealty.my.salesforce.com/' + v : '') },
+          { f: 'owner', label: 'Presales owner (report)', cls: 'l' },
           { f: 'credit', label: 'Credit', cls: 'l' },
-          { f: 'status', label: 'Status', cls: 'l' },
-          { f: 'grading', label: 'Grading', cls: 'l' },
           { f: 'call_result', label: 'Last call result', cls: 'l' },
           { f: 'last_comment', label: 'Last comment', cls: 'l ps-wrap' },
           { f: 'task_created', label: 'Task created (IST)', cls: 'l' },
           { f: 'follow_up', label: 'Follow-up date (IST)', cls: 'l' },
-          { f: 'source', label: 'Source', cls: 'l' },
-          { f: 'sub_source', label: 'Sub-source', cls: 'l' },
-          { f: 'created', label: 'Created (IST)', cls: 'l' }
+          { f: 'source', label: 'Source', cls: 'l' }
         ], list, { key: 'lead_id', empty: 'No leads.', sortable: true });
       };
       const drill = (field, nameOf) => ({
