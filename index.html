@@ -106,7 +106,10 @@
   .ps-t td a { color: var(--navy); text-underline-offset: 2px; }
   .ps-t td a:hover { color: var(--gold); }
   .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
-  .ps-la-drill[hidden], .ps-pr-drill[hidden] { display: none; }
+  .ps-la-drill[hidden], .ps-pr-drill[hidden], .ps-rp-drill[hidden], .ps-rp-body[hidden] { display: none; }
+  .ps-rp-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
+  .ps-la-save { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--gold); background: var(--gold); color: var(--navy-deep); }
+  .ps-la-save:disabled { opacity: .6; cursor: default; }
   .ps-pr-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-t td.ps-picked { background: var(--gold); }
   .ps-t td.ps-picked .ps-drill { color: var(--navy-deep); font-weight: 700; }
@@ -204,6 +207,10 @@
         <span class="n">◎</span><span class="t">Lead analysis (project-wise)</span>
         <span class="m">Presales leads by source, call result, owner</span>
       </button>
+      <button type="button" class="ps-tab t6" role="tab" id="tab-reports" data-screen="reports" aria-selected="false">
+        <span class="n">▤</span><span class="t">Saved reports</span>
+        <span class="m">Frozen monthly lead analysis</span>
+      </button>
       <button type="button" class="ps-tab t5" role="tab" id="tab-team" data-screen="team" aria-selected="false">
         <span class="n">♥</span><span class="t">Team &amp; birthdays</span>
         <span class="m ps-next-bday">Staff list, birthdays, anniversaries</span>
@@ -298,7 +305,8 @@
         <div class="ps-card"><div class="ps-la-bar">
           <label>Project<select class="ps-la-proj" data-source="la_projects" aria-label="Project"></select></label>
           <span class="ps-la-chips">Enquiry type: Inbound · Outbound · Blank</span>
-        </div><p class="ps-note ps-la-status" role="status"></p></div>
+          <button type="button" class="ps-la-save" title="Freeze this project and period into Saved reports">⤓ Save to Reports</button>
+        </div><p class="ps-note ps-la-status" role="status"></p><p class="ps-note ps-la-save-msg" role="status" hidden></p></div>
         <div class="ps-kpis">
           <div class="ps-kpi violet"><span class="ps-kpi-label">Presales leads</span><span class="ps-kpi-val" data-source="la_summary" data-field="leads" data-row="0">—</span><span class="ps-kpi-sub">after removing duplicates</span></div>
           <div class="ps-kpi blue"><span class="ps-kpi-label">Duplicates removed</span><span class="ps-kpi-val" data-source="la_summary" data-field="duplicates" data-row="0">—</span><span class="ps-kpi-sub">same mobile number</span></div>
@@ -315,6 +323,18 @@
       </template>
 
       <!-- Team & birthdays -->
+      <section class="ps-screen t6" id="reports" role="tabpanel" aria-labelledby="tab-reports" hidden>
+        <div class="ps-sh"><span class="k">Saved reports</span><h2>Saved lead analysis reports</h2>
+          <p>Frozen copies of the Lead analysis: once saved, a report never changes, even when leads change in Salesforce. Each month is saved automatically on the 2nd of the next month, one report per project, the first time the dashboard is opened that day or later. Any view can also be saved from the Lead analysis tab with Save to Reports. Click any number to see its leads.</p></div>
+        <div class="ps-card"><div class="ps-la-bar"><label>Report<select class="ps-rp-sel" aria-label="Saved report"></select></label></div><p class="ps-note ps-rp-meta" role="status"></p><p class="ps-note ps-rp-auto" role="status"></p></div>
+        <div class="ps-kpis ps-rp-kpis ps-rp-body"><div class="ps-kpi violet"><span class="ps-kpi-label">Presales leads</span><span class="ps-kpi-val" data-k="leads">—</span><span class="ps-kpi-sub">after removing duplicates</span></div><div class="ps-kpi blue"><span class="ps-kpi-label">Duplicates removed</span><span class="ps-kpi-val" data-k="duplicates">—</span><span class="ps-kpi-sub">same mobile number</span></div><div class="ps-kpi good"><span class="ps-kpi-label">Registered and above</span><span class="ps-kpi-val" data-k="registered_plus">—</span><span class="ps-kpi-sub">Registered, SV Done, Converted</span></div><div class="ps-kpi gold"><span class="ps-kpi-label">Qualified</span><span class="ps-kpi-val" data-k="qualified">—</span><span class="ps-kpi-sub">Req. Qualified + Semi Qualified</span></div><div class="ps-kpi bad"><span class="ps-kpi-label">Closed Lost</span><span class="ps-kpi-val" data-k="closed_lost">—</span><span class="ps-kpi-sub">of presales leads</span></div></div>
+        <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Lead owner vs lead status</h3><button type="button" class="ps-tbl-export" data-table="rp-owner-table" data-name="Saved_report_by_owner">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Leads with a Presales User with AI are shared: Hybrid 0.5 / 0.5, Auto 0.1 presales member / 0.9 AI member.</p><div class="ps-scroll tall"><table class="ps-t" id="rp-owner-table"></table></div></div>
+        <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="rp-source-table" data-name="Saved_report_by_source">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="rp-source-table"></table></div></div>
+        <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Sub-source vs lead status</h3><button type="button" class="ps-tbl-export" data-table="rp-subsource-table" data-name="Saved_report_subsource_vs_status">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">Follow-up leads are split by their last call result.</p><div class="ps-scroll tall"><table class="ps-t" id="rp-subsource-table"></table></div></div>
+        <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="rp-subresult-table" data-name="Saved_report_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="rp-subresult-table"></table></div></div>
+        <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="rp-result-table" data-name="Saved_report_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="rp-result-table"></table></div></div>
+        <div class="ps-card ps-rp-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="rp-drill-table" data-name="Saved_report_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the number you clicked, as they were when the report was saved.</p><div class="ps-scroll tall"><table class="ps-t" id="rp-drill-table"></table></div></div>
+      </section>
       <section class="ps-screen t5" id="team" role="tabpanel" aria-labelledby="tab-team" hidden>
         <div class="ps-sh"><span class="k">Team</span><h2>Team, birthdays and work anniversaries</h2><p>Counted from the report date. On a birthday, the EA sends the team member a greeting card and message from you on WhatsApp at 9:05 AM, and tells you the day before.</p></div>
         <div class="ps-card"><h3>Coming up in the next 60 days</h3><div class="ps-bdays" id="bday-cards" data-source="team_directory"></div></div>
@@ -382,6 +402,8 @@
     const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
     p.q_la = 'SELECT Id, Name, LastName, Status, Owner.Name, Previous_Owner__r.Name, Tele_Caller__r.Name, SubSource__r.Name, UTM_Source__c, Primary_Reason__c, Virtual_Number__c, Inq_rltn_Project_Society__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
+    // Last calendar month (Salesforce runs on India time, so LAST_MONTH is the IST month), every project: the monthly saved reports.
+    p.q_la_prev = p.q_la.split(' FROM Lead WHERE ')[0] + " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c = LAST_MONTH ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
     // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
     // The query covers the first 200 days (W); the loader asks for the rest up to E in 200-day steps.
@@ -478,7 +500,7 @@
   });
 
   // Lead analysis leads: every page of the period's leads for the project (2,000 per page, up to 30 pages).
-  dash.loader('la_leads', {
+  const LA_LOADER = {
     description: 'Leads of the chosen project and period as rows (lookup fields flattened, e.g. Tele_Caller__r.Name becomes Tele_Caller__r_Name), following Salesforce pages',
     fn: async ({ answer, call, args }) => {
       const recs = (x) => {
@@ -501,7 +523,9 @@
       rows.forEach((r) => { const t = (Array.isArray(r.Tasks_records) && r.Tasks_records[0]) || {}; r.Task_Subject = t.Subject || null; r.Task_Comment = t.Comment__c || null; r.Task_Created = t.CreatedDate || null; r.Task_FollowUp = t.Follow_Up_Date_Time__c || null; });
       return { columns: cols, rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] === undefined ? null : r[c]]))), cut, meta: [{ label: 'Salesforce pages', value: String(n) }, { label: 'Leads read', value: String(rows.length) }] };
     }
-  });
+  };
+  dash.loader('la_leads', LA_LOADER);
+  dash.loader('la_prev', LA_LOADER);
 
   // Reconnect requests: every page of the period's tasks, then each lead (400 at a time) with its latest logged call.
   dash.loader('reconnect', {
@@ -945,7 +969,10 @@
     }
   });
 
-  dash.calc('la_clean', {
+  // The same calculations, kept on window.psLA so a saved report is computed exactly like the live tab.
+  const LAFN = window.psLA = {};
+  const laCalc = (id, o) => { LAFN[id] = o.fn; dash.calc(id, o); };
+  laCalc('la_clean', {
     title: 'Presales leads (owner fixed, duplicates removed)',
     description: 'Each lead of the project and period: owner = Presales User with AI (else Presales User) for Registered, Site Visit Done and Converted; only presales owners kept; one lead per mobile number by status priority (Converted 1 … Closed Lost 7, New 8), latest created on a tie. Follow-up leads are reported under their last call result.',
     inputs: ['la_leads'],
@@ -1007,7 +1034,7 @@
     }
   });
 
-  dash.calc('la_summary', {
+  laCalc('la_summary', {
     title: 'Lead analysis headline figures',
     description: 'Presales leads after removing duplicates, duplicates removed, Registered and above, qualified and Closed Lost.',
     inputs: ['la_clean', 'la_leads'],
@@ -1036,10 +1063,10 @@
       key, [label]: key, ...o, registered_plus: o.converted + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted + o.site_visit_done + o.registered) / o.leads : null }; };
     return Object.keys(by).sort((a, b) => by[b].leads - by[a].leads).map((key) => fin(key, by[key])).concat(la_clean.length ? [fin('Total', tot)] : []);
   };
-  dash.calc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status. A lead with Presales User with AI is shared: Hybrid 0.5 presales member + 0.5 AI, Auto 0.1 presales member + 0.9 AI.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
-  dash.calc('la_by_source', { title: 'Lead analysis by source', description: 'Presales leads per Source, by status.', inputs: ['la_clean'], fn: laGroup('source', 'source') });
-  dash.calc('la_by_subsource', { title: 'Lead analysis by sub-source', description: 'Presales leads per Sub-source, by status.', inputs: ['la_clean'], fn: laGroup('sub_source', 'sub_source') });
-  dash.calc('la_subsource_result', {
+  laCalc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status. A lead with Presales User with AI is shared: Hybrid 0.5 presales member + 0.5 AI, Auto 0.1 presales member + 0.9 AI.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
+  laCalc('la_by_source', { title: 'Lead analysis by source', description: 'Presales leads per Source, by status.', inputs: ['la_clean'], fn: laGroup('source', 'source') });
+  laCalc('la_by_subsource', { title: 'Lead analysis by sub-source', description: 'Presales leads per Sub-source, by status.', inputs: ['la_clean'], fn: laGroup('sub_source', 'sub_source') });
+  laCalc('la_subsource_result', {
     title: 'Lead analysis: sub-source vs call result',
     description: 'Presales leads per Sub-source by call result, where Closed Lost = Lost, Registered = Qualified Registered (Q-0/Q-1) or Semi Qualified Registered (Q-2/Q-3), Requirement Qualified and Semi Qualified statuses replace the call result, and Call Back / Call Back Requested = Call Back Request.',
     inputs: ['la_clean'],
@@ -1052,7 +1079,7 @@
       return Object.keys(by).sort((a, b) => by[b].leads - by[a].leads).map((k) => ({ key: k, sub_source: k, ...by[k] })).concat(kept.length ? [{ key: 'Total', sub_source: 'Total', ...tot }] : []);
     }
   });
-  dash.calc('la_by_result', { title: 'Lead analysis by call result', description: 'Presales leads per last call result, by status.', inputs: ['la_clean'], fn: laGroup('call_result', 'call_result') });
+  laCalc('la_by_result', { title: 'Lead analysis by call result', description: 'Presales leads per last call result, by status.', inputs: ['la_clean'], fn: laGroup('call_result', 'call_result') });
 
   dash.calc('kpis', {
     title: 'Headline figures',
@@ -1170,7 +1197,7 @@
   const fail = (el) => { el.replaceChildren(); const p = document.createElement('div'); p.className = 'ps-fail'; p.textContent = 'Failed to load'; el.appendChild(p); };
 
   // Task menu: one screen at a time.
-  const SCREENS = ['overview', 'task1', 'task2', 'task3', 'task4', 'la', 'team'];
+  const SCREENS = ['overview', 'task1', 'task2', 'task3', 'task4', 'la', 'reports', 'team'];
   let current = SCREENS.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'overview';
   const show = (id) => {
     current = id;
@@ -1219,7 +1246,155 @@
 
   // Generic table: cols = [{f, label, fmt, cls, chip}]; opts.sortable adds ▲▼ sorting by heading, opts.pin keeps rows (e.g. Team) last.
   const SORT = {};
-  let LA_DRILL = null, PR_DRILL = null;
+  let LA_DRILL = null, PR_DRILL = null, RP_DRILL = null;
+
+  // ===== Saved reports (Mahuya, 25 Oct 2026): frozen copies of the lead analysis that never change. =====
+  // reports/<id> holds the description; reports/<id>/parts holds the tables (t_*) and the lead list in pieces (l_*).
+  // A report is written once and never overwritten. Last month's report is saved per project on the 2nd.
+  const RP = { list: [], sel: '', data: {}, loading: '', msg: '', auto: '' };
+  const RP_TABLES = ['la_by_owner', 'la_by_source', 'la_by_subsource', 'la_subsource_result', 'la_by_result'];
+  const slug = (s) => String(s || 'no-project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'no-project';
+  const monthName = (ym) => new Date(ym + '-01T00:00:00Z').toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const dbP = (window.claude && window.claude.use) ? window.claude.use('db').catch(() => null) : Promise.resolve(null);
+  const buildReport = (raw) => {
+    const clean = LAFN.la_clean(raw);
+    const tables = {};
+    RP_TABLES.forEach((t) => { tables[t] = LAFN[t](clean); });
+    return { clean, tables, summary: LAFN.la_summary(clean, raw) };
+  };
+  const saveReport = async (meta, rep) => {
+    const db = await dbP;
+    if (!db) throw new Error('Saving needs the dashboard open in claude.ai with edit access.');
+    const ref = db.doc('reports/' + meta.id);
+    if ((await ref.get()).exists) return 'exists';
+    const parts = db.collection('reports/' + meta.id + '/parts');
+    for (const t of RP_TABLES) await parts.doc('t_' + t).set({ rows: rep.tables[t] });
+    let chunk = [], size = 0, n = 0;
+    const flush = async () => { if (!chunk.length) return; await parts.doc('l_' + String(n).padStart(3, '0')).set({ rows: chunk }); n += 1; chunk = []; size = 0; };
+    for (const r of rep.clean) { const s = JSON.stringify(r).length; if (size + s > 190000) await flush(); chunk.push(r); size += s; }
+    await flush();
+    const sm = (rep.summary && rep.summary[0]) || {};
+    await ref.set(Object.assign({}, meta, { kind: 'lead_analysis', summary: sm, lead_rows: rep.clean.length, chunks: n, complete: true }));
+    return 'saved';
+  };
+  const loadReport = async (id) => {
+    if (RP.data[id] || RP.loading === id) return;
+    const db = await dbP;
+    if (!db) return;
+    RP.loading = id; draw();
+    try {
+      // Each piece by name (tables t_*, then lead pieces l_000…), so a large report is never cut short.
+      const meta = RP.list.find((r) => r.id === id) || {};
+      const parts = db.collection('reports/' + id + '/parts');
+      const d = { la_clean: [] };
+      for (const t of RP_TABLES) { const x = await parts.doc('t_' + t).get(); d[t] = x.exists ? (x.data().rows || []) : []; }
+      for (let i = 0; i < (meta.chunks || 0); i++) { const x = await parts.doc('l_' + String(i).padStart(3, '0')).get(); if (!x.exists) throw { code: 'piece_missing' }; d.la_clean = d.la_clean.concat(x.data().rows || []); }
+      RP.data[id] = d;
+    } catch (e) { RP.msg = 'Could not open this report (' + ((e && e.code) || 'error') + ').'; }
+    RP.loading = '';
+    draw();
+  };
+  dbP.then((db) => {
+    if (!db) { RP.msg = 'Saved reports open only inside claude.ai.'; return; }
+    db.collection('reports').onSnapshot((snap) => {
+      RP.list = snap.docs.map((x) => Object.assign({ id: x.id }, x.data())).filter((r) => r.complete)
+        .sort((a, b) => (String(b.to) + b.saved_at < String(a.to) + a.saved_at ? -1 : 1));
+      if (!RP.sel && RP.list.length) RP.sel = RP.list[0].id;
+      draw();
+    }, (e) => { RP.msg = 'Saved reports are unavailable (' + ((e && e.code) || 'error') + ').'; draw(); });
+  });
+
+  // Monthly freeze: from the 2nd, the first time an editor opens the dashboard, save last month per project (once).
+  const AUTO = { state: '', key: '', from: '', to: '' };
+  (async () => {
+    const t = window.psToday();
+    const y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7)), dd = Number(t.slice(8, 10));
+    const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+    AUTO.key = py + '-' + String(pm).padStart(2, '0');
+    AUTO.from = AUTO.key + '-01';
+    AUTO.to = AUTO.key + '-' + String(new Date(Date.UTC(py, pm, 0)).getUTCDate()).padStart(2, '0');
+    const db = await dbP;
+    if (!db) return;
+    const mk = db.doc('reports_auto/' + AUTO.key);
+    const s = await mk.get();
+    if (s.exists && s.data().done) { RP.auto = monthName(AUTO.key) + ' was saved automatically on ' + new Date(s.data().at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) + ' IST.'; draw(); return; }
+    if (dd < 2) { RP.auto = monthName(AUTO.key) + ' will be saved automatically from the 2nd.'; draw(); return; }
+    const user = window.claude && window.claude.use ? await window.claude.use('user').catch(() => null) : null;
+    if (user && (await user.can('data.write')) === false) return;
+    const lease = await mk.acquire({ holder: 'p' + Math.random().toString(36).slice(2), ttlMs: 600000 }).catch(() => ({ acquired: false }));
+    if (!lease.acquired) return;
+    AUTO.state = 'waiting';
+    RP.auto = 'Saving ' + monthName(AUTO.key) + ' from Salesforce…';
+    draw();
+  })().catch(() => { /* saved reports unavailable in this view */ });
+  const autoTick = () => {
+    if (AUTO.state !== 'waiting') return;
+    const d = st('la_prev');
+    if (d.status !== 'ok' || d.refreshing) { if (failed('la_prev')) { AUTO.state = 'failed'; RP.auto = 'Could not read ' + monthName(AUTO.key) + ' from Salesforce; it will try again next time the dashboard opens.'; } return; }
+    AUTO.state = 'saving';
+    (async () => {
+      const raw = okRows('la_prev') || [];
+      const byProj = {};
+      raw.forEach((r) => { const p = r.Inq_rltn_Project_Society__r_Name || '(no project)'; (byProj[p] = byProj[p] || []).push(r); });
+      let n = 0;
+      for (const proj of Object.keys(byProj)) {
+        const rep = buildReport(byProj[proj]);
+        if (!rep.clean.some((x) => x.kept === 'Yes')) continue;
+        const r = await saveReport({ id: 'la_' + AUTO.key + '_' + slug(proj), title: proj + ' · ' + monthName(AUTO.key), project: proj, month: AUTO.key, from: AUTO.from, to: AUTO.to, saved_at: new Date().toISOString(), saved_how: 'Automatic monthly save' }, rep);
+        if (r === 'saved') n += 1;
+      }
+      const db = await dbP;
+      await db.doc('reports_auto/' + AUTO.key).set({ done: true, at: new Date().toISOString(), reports: n });
+      AUTO.state = 'done';
+      RP.auto = monthName(AUTO.key) + ' saved automatically just now (' + n + ' project' + (n === 1 ? '' : 's') + ').';
+      draw();
+    })().catch((e) => { AUTO.state = 'failed'; RP.auto = 'Monthly save stopped: ' + ((e && (e.message || e.code)) || 'error') + '. It will try again next time.'; draw(); });
+  };
+
+  // Save to Reports (Lead analysis tab): freezes exactly the view on screen.
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('.ps-la-save');
+    if (!b) return;
+    const msg = document.querySelector('.ps-la-save-msg');
+    const say = (t) => { msg.hidden = !t; msg.textContent = t || ''; };
+    const raw = okRows('la_leads'), clean = okRows('la_clean');
+    if (!raw || !clean || st('la_leads').refreshing) { say('Wait for the lead analysis to finish loading, then save.'); return; }
+    const { from, to } = cur();
+    const proj = dash.params().project || 'NEW KOLKATA - SANGAM';
+    const now = new Date();
+    const tables = {};
+    RP_TABLES.forEach((t) => { tables[t] = okRows(t) || []; });
+    const label = dash.params().all ? 'All time to ' + to : from === to ? to : from + ' to ' + to;
+    b.disabled = true; say('Saving…');
+    try {
+      await saveReport({ id: 'la_' + from + '_' + to + '_' + slug(proj) + '_' + now.getTime(), title: proj + ' · ' + label, project: proj, month: '', from, to, saved_at: now.toISOString(), saved_how: 'Saved from the Lead analysis tab' },
+        { clean, tables, summary: okRows('la_summary') || [] });
+      say('Saved. Find it under Saved reports.');
+    } catch (e) { say('Not saved: ' + ((e && (e.message || e.code)) || 'error')); }
+    b.disabled = false;
+  });
+
+  const drawReports = () => {
+    const sel = document.querySelector('.ps-rp-sel');
+    if (!sel) return;
+    if (document.activeElement !== sel) {
+      sel.replaceChildren(...(RP.list.length ? RP.list.map((r) => new Option(r.title, r.id)) : [new Option('No saved reports yet', '')]));
+      sel.value = RP.sel;
+    }
+    document.querySelector('.ps-rp-auto').textContent = RP.auto;
+    const meta = RP.list.find((r) => r.id === RP.sel);
+    const d = meta ? RP.data[meta.id] : null;
+    if (meta && !d) loadReport(meta.id);
+    document.querySelector('.ps-rp-meta').textContent = RP.msg || (meta ? 'Project ' + meta.project + ' · period ' + meta.from + ' to ' + meta.to + ' · saved ' + new Date(meta.saved_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' IST (' + meta.saved_how + '). Frozen: these numbers do not change.' + (RP.loading ? ' Opening…' : '') : '');
+    document.querySelectorAll('.ps-rp-kpis [data-k]').forEach((e) => { const v = meta && meta.summary ? meta.summary[e.dataset.k] : undefined; e.textContent = v === undefined ? '—' : fmtN(v); });
+    document.querySelectorAll('.ps-rp-body').forEach((e) => { e.hidden = !meta; });
+    drawLAViews('rp', (id) => (d ? d[id] || [] : null), false, () => RP_DRILL, (v) => { RP_DRILL = v; });
+  };
+  document.addEventListener('change', (ev) => {
+    if (!ev.target.closest('.ps-rp-sel')) return;
+    RP.sel = ev.target.value; RP_DRILL = null; RP.msg = ''; draw();
+  });
+
   const drawPrDrill = () => {
     const card = document.querySelector('.ps-pr-drill');
     if (!card) return;
@@ -1262,7 +1437,7 @@
     if (opts.sortable === undefined) opts = { ...opts, sortable: true };
     if (!opts.pin) { const c0 = cols[0] && cols[0].f; opts = { ...opts, pin: (r) => r.key === 'Total' || r.attendance === 'Team' || /^(team|total)( |$)/i.test(String((c0 && r[c0]) || '')) || (!!opts.rowClass && / ?team( |$)/.test(' ' + opts.rowClass(r))) }; }
     el.replaceChildren();
-    if (failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
+    if (id && failed(id)) { const tr = el.createTBody().insertRow(); const td = tr.insertCell(); td.colSpan = cols.length; fail(td); return; }
     const s = opts.sortable ? SORT[el.id] : null;
     const head = el.createTHead().insertRow();
     cols.forEach((c) => {
@@ -1402,6 +1577,83 @@
     });
   };
 
+  // Tables, drill-down and lead list of a lead analysis: pfx 'la' = live tab, 'rp' = a saved report (R gives its stored rows).
+  const drawLAViews = (pfx, R, live, getDrill, setDrill) => {
+    const STC0 = [
+      { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) },
+      { f: 'converted', label: 'Converted', fmt: (v) => fmtN(v) },
+      { f: 'site_visit_done', label: 'SV Done', fmt: (v) => fmtN(v) },
+      { f: 'registered', label: 'Registered', fmt: (v) => fmtN(v) },
+      { f: 'req_qualified', label: 'Req. Qualified', fmt: (v) => fmtN(v) },
+      { f: 'semi_qualified', label: 'Semi Qualified', fmt: (v) => fmtN(v) }
+    ];
+    const fuCols = (rows) => { const tot = (rows || []).find((r) => r.key === 'Total') || {}; return Object.keys(tot).filter((k) => k.indexOf('fu:') === 0).sort((a, b) => tot[b] - tot[a]).map((k) => ({ f: k, label: 'Follow-up · ' + k.slice(3), fmt: (v) => fmtN(v || 0) })); };
+    const STC1 = [
+      { f: 'closed_lost', label: 'Closed Lost', fmt: (v) => fmtN(v) },
+      { f: 'new_other', label: 'New / other', fmt: (v) => fmtN(v) },
+      { f: 'registered_plus', label: 'Registered+', fmt: (v) => fmtN(v) },
+      { f: 'reg_pct', label: 'Registered+ %', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.1 ? 'good' : v >= 0.05 ? 'warn' : 'bad') }
+    ];
+    const STC = (id) => STC0.concat(fuCols(R(id)), STC1);
+    const RK = { converted: 1, site_visit_done: 2, registered: 3, req_qualified: 4, semi_qualified: 5, closed_lost: 7 };
+    const colPred = (f) => f === 'leads' ? () => true : f === 'registered_plus' ? (x) => x.rank <= 3 : f === 'new_other' ? (x) => x.rank >= 8
+      : f.indexOf('fu:') === 0 ? (x) => x.rank === 6 && x.call_result === f.slice(3) : f.indexOf('cr:') === 0 ? (x) => x.result_group === f.slice(3) : RK[f] ? (x) => x.rank === RK[f] : null;
+    const drawDrill = () => {
+      const card = document.querySelector('.ps-' + pfx + '-drill');
+      if (!card) return;
+      const d = getDrill(), all = R('la_clean');
+      if (!d || !all || !colPred(d.f)) { card.hidden = true; return; }
+      const p = colPred(d.f);
+      const list = all.filter((x) => x.kept === 'Yes' && (d.key === 'Total' || x[d.field] === d.key || (d.field === 'owner' && x.ai_member === d.key)) && p(x));
+      card.hidden = false;
+      card.querySelector('.ps-drill-h').textContent = d.title + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
+      table(document.getElementById(pfx + '-drill-table'), live ? 'la_clean' : '', [
+        { f: 'created', label: 'Created Date (Considered for Report)', cls: 'l' },
+        { f: 'last_name', label: 'Last Name', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
+        { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
+        { f: 'project', label: 'Project / Society', cls: 'l' },
+        { f: 'sub_source', label: 'Sub-source(Text)', cls: 'l' },
+        { f: 'sub_source_pick', label: 'Sub-Source', cls: 'l' },
+        { f: 'lead_owner', label: 'Lead Owner', cls: 'l' },
+        { f: 'previous_owner', label: 'Previous Owner', cls: 'l' },
+        { f: 'status', label: 'Lead Status', cls: 'l' },
+        { f: 'utm_source', label: 'UTM Source', cls: 'l' },
+        { f: 'primary_reason', label: 'Primary Reason', cls: 'l' },
+        { f: 'grading', label: 'Enquiry Grading', cls: 'l' },
+        { f: 'virtual_number', label: 'Virtual Number', cls: 'l' },
+        { f: 'presales_user', label: 'Pre Sales User', cls: 'l' },
+        { f: 'enquiry_type', label: 'Enquiry Type', cls: 'l' },
+        { f: 'lead_id', label: 'Lead Id', cls: 'l', link: (v) => (v ? 'https://alcoverealty.my.salesforce.com/' + v : '') },
+        { f: 'owner', label: 'Presales owner (report)', cls: 'l' },
+        { f: 'credit', label: 'Credit', cls: 'l' },
+        { f: 'call_result', label: 'Last call result', cls: 'l' },
+        { f: 'last_comment', label: 'Last comment', cls: 'l ps-wrap' },
+        { f: 'task_created', label: 'Task created (IST)', cls: 'l' },
+        { f: 'follow_up', label: 'Follow-up date (IST)', cls: 'l' },
+        { f: 'source', label: 'Source', cls: 'l' }
+      ], list, { key: 'lead_id', empty: 'No leads.', sortable: true });
+    };
+    const drill = (field, nameOf) => ({
+      can: (r, c) => c.f !== field && !!colPred(c.f) && typeof r[c.f] === 'number' && r[c.f] > 0,
+      open: (r, c) => {
+        setDrill({ field, key: r.key, f: c.f, title: (r.key === 'Total' ? 'All ' + nameOf : r.key) + ' · ' + c.label });
+        drawDrill();
+        const card = document.querySelector('.ps-' + pfx + '-drill');
+        if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    const opt = (empty, field, nameOf) => ({ key: 'key', rowClass: (r) => (r.key === 'Total' ? 'team' : ''), empty, sortable: true, pin: (r) => r.key === 'Total', drill: field ? drill(field, nameOf) : null });
+    const none = 'No presales leads for this project and period.';
+    drawDrill();
+    table(document.getElementById(pfx + '-owner-table'), live ? 'la_by_owner' : '', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), R('la_by_owner'), opt(none, 'owner', 'owners'));
+    table(document.getElementById(pfx + '-source-table'), live ? 'la_by_source' : '', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), R('la_by_source'), opt(none, 'source', 'sources'));
+    table(document.getElementById(pfx + '-subsource-table'), live ? 'la_by_subsource' : '', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), R('la_by_subsource'), opt(none, 'sub_source', 'sub-sources'));
+    const subRes = R('la_subsource_result'), srTot = (subRes || []).find((r) => r.key === 'Total') || {};
+    const srCols = Object.keys(srTot).filter((k) => k.indexOf('cr:') === 0).sort((a, b) => srTot[b] - srTot[a]).map((k) => ({ f: k, label: k.slice(3), fmt: (v) => fmtN(v || 0) }));
+    table(document.getElementById(pfx + '-subresult-table'), live ? 'la_subsource_result' : '', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }, { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) }].concat(srCols), subRes, opt(none, 'sub_source', 'sub-sources'));
+    table(document.getElementById(pfx + '-result-table'), live ? 'la_by_result' : '', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), R('la_by_result'), opt(none, 'call_result', 'call results'));
+  };
+
   function draw() {
     const D = dash.params().date || '';
     const { from: F, to: T } = cur();
@@ -1516,79 +1768,10 @@
       const lst = document.querySelector('.ps-la-status');
       const ld = st('la_leads');
       lst.textContent = ld.status === 'loading' || ld.refreshing ? 'Loading leads from Salesforce… long periods (All time) can take a minute.' : sm && sm[0] ? fmtN(sm[0].read) + ' leads read for this project and period; ' + fmtN(sm[0].presales) + ' with a presales owner; ' + fmtN(sm[0].duplicates) + ' duplicates removed.' + (ld.cut ? ' Very long period: only the first 60,000 leads were read.' : '') : '';
-      const STC0 = [
-        { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) },
-        { f: 'converted', label: 'Converted', fmt: (v) => fmtN(v) },
-        { f: 'site_visit_done', label: 'SV Done', fmt: (v) => fmtN(v) },
-        { f: 'registered', label: 'Registered', fmt: (v) => fmtN(v) },
-        { f: 'req_qualified', label: 'Req. Qualified', fmt: (v) => fmtN(v) },
-        { f: 'semi_qualified', label: 'Semi Qualified', fmt: (v) => fmtN(v) }
-      ];
-      const fuCols = (rows) => { const tot = (rows || []).find((r) => r.key === 'Total') || {}; return Object.keys(tot).filter((k) => k.indexOf('fu:') === 0).sort((a, b) => tot[b] - tot[a]).map((k) => ({ f: k, label: 'Follow-up · ' + k.slice(3), fmt: (v) => fmtN(v || 0) })); };
-      const STC1 = [
-        { f: 'closed_lost', label: 'Closed Lost', fmt: (v) => fmtN(v) },
-        { f: 'new_other', label: 'New / other', fmt: (v) => fmtN(v) },
-        { f: 'registered_plus', label: 'Registered+', fmt: (v) => fmtN(v) },
-        { f: 'reg_pct', label: 'Registered+ %', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.1 ? 'good' : v >= 0.05 ? 'warn' : 'bad') }
-      ];
-      const STC = (id) => STC0.concat(fuCols(okRows(id)), STC1);
-      const RK = { converted: 1, site_visit_done: 2, registered: 3, req_qualified: 4, semi_qualified: 5, closed_lost: 7 };
-      const colPred = (f) => f === 'leads' ? () => true : f === 'registered_plus' ? (x) => x.rank <= 3 : f === 'new_other' ? (x) => x.rank >= 8
-        : f.indexOf('fu:') === 0 ? (x) => x.rank === 6 && x.call_result === f.slice(3) : f.indexOf('cr:') === 0 ? (x) => x.result_group === f.slice(3) : RK[f] ? (x) => x.rank === RK[f] : null;
-      const drawDrill = () => {
-        const card = document.querySelector('.ps-la-drill');
-        if (!card) return;
-        const d = LA_DRILL, all = okRows('la_clean');
-        if (!d || !all || !colPred(d.f)) { card.hidden = true; return; }
-        const p = colPred(d.f);
-        const list = all.filter((x) => x.kept === 'Yes' && (d.key === 'Total' || x[d.field] === d.key || (d.field === 'owner' && x.ai_member === d.key)) && p(x));
-        card.hidden = false;
-        card.querySelector('.ps-drill-h').textContent = d.title + ' – ' + fmtN(list.length) + (list.length === 1 ? ' lead' : ' leads');
-        table(document.getElementById('la-drill-table'), 'la_clean', [
-          { f: 'created', label: 'Created Date (Considered for Report)', cls: 'l' },
-          { f: 'last_name', label: 'Last Name', cls: 'l', link: (v, r) => (r.lead_id ? 'https://alcoverealty.my.salesforce.com/' + r.lead_id : '') },
-          { f: 'mobile', label: 'Mobile', cls: 'l', link: (v) => (v ? 'tel:+91' + v : '') },
-          { f: 'project', label: 'Project / Society', cls: 'l' },
-          { f: 'sub_source', label: 'Sub-source(Text)', cls: 'l' },
-          { f: 'sub_source_pick', label: 'Sub-Source', cls: 'l' },
-          { f: 'lead_owner', label: 'Lead Owner', cls: 'l' },
-          { f: 'previous_owner', label: 'Previous Owner', cls: 'l' },
-          { f: 'status', label: 'Lead Status', cls: 'l' },
-          { f: 'utm_source', label: 'UTM Source', cls: 'l' },
-          { f: 'primary_reason', label: 'Primary Reason', cls: 'l' },
-          { f: 'grading', label: 'Enquiry Grading', cls: 'l' },
-          { f: 'virtual_number', label: 'Virtual Number', cls: 'l' },
-          { f: 'presales_user', label: 'Pre Sales User', cls: 'l' },
-          { f: 'enquiry_type', label: 'Enquiry Type', cls: 'l' },
-          { f: 'lead_id', label: 'Lead Id', cls: 'l', link: (v) => (v ? 'https://alcoverealty.my.salesforce.com/' + v : '') },
-          { f: 'owner', label: 'Presales owner (report)', cls: 'l' },
-          { f: 'credit', label: 'Credit', cls: 'l' },
-          { f: 'call_result', label: 'Last call result', cls: 'l' },
-          { f: 'last_comment', label: 'Last comment', cls: 'l ps-wrap' },
-          { f: 'task_created', label: 'Task created (IST)', cls: 'l' },
-          { f: 'follow_up', label: 'Follow-up date (IST)', cls: 'l' },
-          { f: 'source', label: 'Source', cls: 'l' }
-        ], list, { key: 'lead_id', empty: 'No leads.', sortable: true });
-      };
-      const drill = (field, nameOf) => ({
-        can: (r, c) => c.f !== field && !!colPred(c.f) && typeof r[c.f] === 'number' && r[c.f] > 0,
-        open: (r, c) => {
-          LA_DRILL = { field, key: r.key, f: c.f, title: (r.key === 'Total' ? 'All ' + nameOf : r.key) + ' · ' + c.label };
-          drawDrill();
-          const card = document.querySelector('.ps-la-drill');
-          if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-      const opt = (empty, field, nameOf) => ({ key: 'key', rowClass: (r) => (r.key === 'Total' ? 'team' : ''), empty, sortable: true, pin: (r) => r.key === 'Total', drill: field ? drill(field, nameOf) : null });
-      const none = 'No presales leads for this project and period.';
-      drawDrill();
-      table(document.getElementById('la-owner-table'), 'la_by_owner', [{ f: 'lead_owner', label: 'Lead owner' }].concat(STC('la_by_owner')), okRows('la_by_owner'), opt(none, 'owner', 'owners'));
-      table(document.getElementById('la-source-table'), 'la_by_source', [{ f: 'source', label: 'Source', cls: 'l' }].concat(STC('la_by_source')), okRows('la_by_source'), opt(none, 'source', 'sources'));
-      table(document.getElementById('la-subsource-table'), 'la_by_subsource', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }].concat(STC('la_by_subsource')), okRows('la_by_subsource'), opt(none, 'sub_source', 'sub-sources'));
-      const subRes = okRows('la_subsource_result'), srTot = (subRes || []).find((r) => r.key === 'Total') || {};
-      const srCols = Object.keys(srTot).filter((k) => k.indexOf('cr:') === 0).sort((a, b) => srTot[b] - srTot[a]).map((k) => ({ f: k, label: k.slice(3), fmt: (v) => fmtN(v || 0) }));
-      table(document.getElementById('la-subresult-table'), 'la_subsource_result', [{ f: 'sub_source', label: 'Sub-source', cls: 'l' }, { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) }].concat(srCols), subRes, opt(none, 'sub_source', 'sub-sources'));
-      table(document.getElementById('la-result-table'), 'la_by_result', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), okRows('la_by_result'), opt(none, 'call_result', 'call results'));
+      drawLAViews('la', okRows, true, () => LA_DRILL, (v) => { LA_DRILL = v; });
+    }
+    if (current === 'reports') {
+      drawReports();
     }
 
     if (current === 'task3') {
@@ -1836,6 +2019,7 @@
     const card = x.closest('.ps-card');
     if (card.classList.contains('ps-la-drill')) LA_DRILL = null;
     if (card.classList.contains('ps-pr-drill')) PR_DRILL = null;
+    if (card.classList.contains('ps-rp-drill')) RP_DRILL = null;
     card.hidden = true;
     draw();
   });
@@ -1868,7 +2052,7 @@
   // Each part draws on its own, so one failing part doesn't blank the rest; the first error is still reported.
   dash.onData(() => {
     let err = null;
-    [draw, drawAttendance, drawTeam, showPulled].forEach((f) => { try { f(); } catch (e) { err = err || e; } });
+    [draw, drawAttendance, drawTeam, showPulled, autoTick].forEach((f) => { try { f(); } catch (e) { err = err || e; } });
     if (err) throw err;
   });
   document.querySelectorAll('.ps-tab').forEach((b) => b.addEventListener('click', () => { drawAttendance(); drawTeam(); }));
