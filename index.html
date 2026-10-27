@@ -401,7 +401,7 @@
     p.project = proj;
     const LW = " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c >= " + R0 + ' AND Enquiry_Date__c < ' + R1;
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
-    p.q_la = 'SELECT Id, Name, LastName, Status, Owner.Name, Previous_Owner__r.Name, Tele_Caller__r.Name, SubSource__r.Name, UTM_Source__c, Primary_Reason__c, Virtual_Number__c, Inq_rltn_Project_Society__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
+    p.q_la = 'SELECT Id, Name, LastName, Status, Owner.Name, Previous_Owner__r.Name, Tele_Caller__r.Name, SubSource__r.Name, UTM_Source__c, Primary_Reason__c, Virtual_Number__c, Type_of_Site_Visit__c, Inq_rltn_Project_Society__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     // Last calendar month (Salesforce runs on India time, so LAST_MONTH is the IST month), every project: the monthly saved reports.
     p.q_la_prev = p.q_la.split(' FROM Lead WHERE ')[0] + " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c = LAST_MONTH ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
@@ -519,7 +519,7 @@
         page = recs(ans); open = more(ans);
         rows = rows.concat(page); n += 1;
       }
-      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c', 'LastName', 'Previous_Owner__r_Name', 'SubSource__r_Name', 'UTM_Source__c', 'Primary_Reason__c', 'Virtual_Number__c', 'Inq_rltn_Project_Society__r_Name', 'Task_Subject', 'Task_Comment', 'Task_Created', 'Task_FollowUp'];
+      const cols = ['Id', 'Name', 'Status', 'Owner_Name', 'Tele_Caller__r_Name', 'Presales_AI_Assignment__c', 'mobile_no_converted_format_normal__c', 'MobilePhone', 'Inq_pkl_Source__c', 'Sub_source_Text__c', 'Last_Activity_Call_Result__c', 'Enquiry_Grading__c', 'Enquiry_Date__c', 'Enquiry_Type__c', 'Type_of_Site_Visit__c', 'LastName', 'Previous_Owner__r_Name', 'SubSource__r_Name', 'UTM_Source__c', 'Primary_Reason__c', 'Virtual_Number__c', 'Inq_rltn_Project_Society__r_Name', 'Task_Subject', 'Task_Comment', 'Task_Created', 'Task_FollowUp'];
       rows.forEach((r) => { const t = (Array.isArray(r.Tasks_records) && r.Tasks_records[0]) || {}; r.Task_Subject = t.Subject || null; r.Task_Comment = t.Comment__c || null; r.Task_Created = t.CreatedDate || null; r.Task_FollowUp = t.Follow_Up_Date_Time__c || null; });
       return { columns: cols, rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] === undefined ? null : r[c]]))), cut, meta: [{ label: 'Salesforce pages', value: String(n) }, { label: 'Leads read', value: String(rows.length) }] };
     }
@@ -1003,7 +1003,9 @@
         const cr = l.Last_Activity_Call_Result__c || '', gr = String(l.Enquiry_Grading__c || '').toUpperCase().replace(/[^Q0-9]/g, '');
         rows[rows.length - 1].grading = l.Enquiry_Grading__c || '';
         Object.assign(rows[rows.length - 1], { last_name: l.LastName || l.Name || '', project: l.Inq_rltn_Project_Society__r_Name || '', sub_source_pick: l.SubSource__r_Name || '', lead_owner: l.Owner_Name || '', previous_owner: l.Previous_Owner__r_Name || '',
-          utm_source: l.UTM_Source__c || '', primary_reason: l.Primary_Reason__c || '', virtual_number: l.Virtual_Number__c || '', presales_user: l.Tele_Caller__r_Name || '' });
+          utm_source: l.UTM_Source__c || '', primary_reason: l.Primary_Reason__c || '', virtual_number: l.Virtual_Number__c || '', presales_user: l.Tele_Caller__r_Name || '',
+          // Converted split by Type of Site Visit (Mahuya, 27 Oct 2026): 'Virtual Tour' = virtual, everything else physical.
+          visit_type: l.Type_of_Site_Visit__c || '', visit_virtual: /virtual/i.test(String(l.Type_of_Site_Visit__c || '')) });
         const pc = aiName ? (aiMode === 'Auto' ? 0.1 : 0.5) : 1;
         Object.assign(rows[rows.length - 1], { ai_member: aiName, ai_mode: aiMode, presales_credit: pc, ai_credit: aiName ? Math.round((1 - pc) * 10) / 10 : 0,
           credit: aiName ? o + ' ' + pc + ' · ' + aiName + ' ' + Math.round((1 - pc) * 10) / 10 + ' (' + aiMode + ')' : o + ' 1' });
@@ -1047,20 +1049,20 @@
 
   const laGroup = (field, label) => (la_clean) => {
     // Follow-up leads are shown by their last call result (Mahuya, 24 Oct 2026): column 'fu:<call result>'.
-    const COLS = [['converted', 1], ['site_visit_done', 2], ['registered', 3], ['req_qualified', 4], ['semi_qualified', 5], ['closed_lost', 7], ['new_other', 8]];
+    const COLS = [['converted_phy', 1], ['site_visit_done', 2], ['registered', 3], ['req_qualified', 4], ['semi_qualified', 5], ['closed_lost', 7], ['new_other', 8]];
     const kept = la_clean.filter((r) => r.kept === 'Yes');
     const FU = [...new Set(kept.filter((r) => r.rank === 6).map((r) => 'fu:' + r.call_result))];
-    const blank = () => { const o = { leads: 0 }; COLS.forEach(([c]) => { o[c] = 0; }); FU.forEach((c) => { o[c] = 0; }); return o; };
+    const blank = () => { const o = { leads: 0, converted_vir: 0 }; COLS.forEach(([c]) => { o[c] = 0; }); FU.forEach((c) => { o[c] = 0; }); return o; };
     const by = {}, tot = blank();
     const shares = (r) => (field === 'owner' && r.ai_member ? [[r.owner, r.presales_credit], [r.ai_member, r.ai_credit]] : [[r[field], 1]]);
     kept.forEach((r) => {
-      const col = r.rank === 6 ? 'fu:' + r.call_result : (COLS.find(([, n]) => n === r.rank) || COLS[6])[0];
+      const col = r.rank === 6 ? 'fu:' + r.call_result : r.rank === 1 && r.visit_virtual ? 'converted_vir' : (COLS.find(([, n]) => n === r.rank) || COLS[6])[0];
       shares(r).forEach(([k, w]) => { const g = (by[k] = by[k] || blank()); g.leads += w; g[col] += w; });
       tot.leads += 1; tot[col] += 1;
     });
     const r1 = (o) => { const x = {}; Object.keys(o).forEach((k) => { x[k] = typeof o[k] === 'number' ? Math.round(o[k] * 10) / 10 : o[k]; }); return x; };
     const fin = (key, o0) => { const o = r1(o0); return {
-      key, [label]: key, ...o, registered_plus: o.converted + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted + o.site_visit_done + o.registered) / o.leads : null }; };
+      key, [label]: key, ...o, converted: o.converted_phy + o.converted_vir, registered_plus: o.converted_phy + o.converted_vir + o.site_visit_done + o.registered, reg_pct: o.leads ? (o.converted_phy + o.converted_vir + o.site_visit_done + o.registered) / o.leads : null }; };
     return Object.keys(by).sort((a, b) => by[b].leads - by[a].leads).map((key) => fin(key, by[key])).concat(la_clean.length ? [fin('Total', tot)] : []);
   };
   laCalc('la_by_owner', { title: 'Lead analysis by lead owner', description: 'Presales leads per lead owner (after the owner fix and duplicate removal), by status. A lead with Presales User with AI is shared: Hybrid 0.5 presales member + 0.5 AI, Auto 0.1 presales member + 0.9 AI.', inputs: ['la_clean'], fn: laGroup('owner', 'lead_owner') });
@@ -1581,7 +1583,6 @@
   const drawLAViews = (pfx, R, live, getDrill, setDrill) => {
     const STC0 = [
       { f: 'leads', label: 'Leads', fmt: (v) => fmtN(v) },
-      { f: 'converted', label: 'Converted', fmt: (v) => fmtN(v) },
       { f: 'site_visit_done', label: 'SV Done', fmt: (v) => fmtN(v) },
       { f: 'registered', label: 'Registered', fmt: (v) => fmtN(v) },
       { f: 'req_qualified', label: 'Req. Qualified', fmt: (v) => fmtN(v) },
@@ -1594,9 +1595,12 @@
       { f: 'registered_plus', label: 'Registered+', fmt: (v) => fmtN(v) },
       { f: 'reg_pct', label: 'Registered+ %', fmt: (v) => fmtP(v), chip: (v) => (v === null ? 'muted' : v >= 0.1 ? 'good' : v >= 0.05 ? 'warn' : 'bad') }
     ];
-    const STC = (id) => STC0.concat(fuCols(R(id)), STC1);
+    const CONV = (rows) => ((rows || []).some((r) => 'converted_phy' in r)
+      ? [{ f: 'converted_phy', label: 'Converted (Physical)', fmt: (v) => fmtN(v || 0) }, { f: 'converted_vir', label: 'Converted (Virtual)', fmt: (v) => fmtN(v || 0) }]
+      : [{ f: 'converted', label: 'Converted', fmt: (v) => fmtN(v) }]);
+    const STC = (id) => [STC0[0]].concat(CONV(R(id)), STC0.slice(1), fuCols(R(id)), STC1);
     const RK = { converted: 1, site_visit_done: 2, registered: 3, req_qualified: 4, semi_qualified: 5, closed_lost: 7 };
-    const colPred = (f) => f === 'leads' ? () => true : f === 'registered_plus' ? (x) => x.rank <= 3 : f === 'new_other' ? (x) => x.rank >= 8
+    const colPred = (f) => f === 'leads' ? () => true : f === 'converted_phy' ? (x) => x.rank === 1 && !x.visit_virtual : f === 'converted_vir' ? (x) => x.rank === 1 && !!x.visit_virtual : f === 'registered_plus' ? (x) => x.rank <= 3 : f === 'new_other' ? (x) => x.rank >= 8
       : f.indexOf('fu:') === 0 ? (x) => x.rank === 6 && x.call_result === f.slice(3) : f.indexOf('cr:') === 0 ? (x) => x.result_group === f.slice(3) : RK[f] ? (x) => x.rank === RK[f] : null;
     const drawDrill = () => {
       const card = document.querySelector('.ps-' + pfx + '-drill');
@@ -1617,6 +1621,7 @@
         { f: 'lead_owner', label: 'Lead Owner', cls: 'l' },
         { f: 'previous_owner', label: 'Previous Owner', cls: 'l' },
         { f: 'status', label: 'Lead Status', cls: 'l' },
+        { f: 'visit_type', label: 'Type of Site Visit', cls: 'l' },
         { f: 'utm_source', label: 'UTM Source', cls: 'l' },
         { f: 'primary_reason', label: 'Primary Reason', cls: 'l' },
         { f: 'grading', label: 'Enquiry Grading', cls: 'l' },
