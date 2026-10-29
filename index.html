@@ -603,7 +603,7 @@
       const NREACH = ['Call Not Received', 'Number Not Reachable', 'Switched Off', 'Not Reachable', 'Ringing'];
       const CB = ['Call Back', 'Call Back Requested'];
       const UP = { 'Requirement Qualified': 'Req. Qualified', 'Semi Qualified': 'Semi Qualified', 'Registered': 'Registered', 'Site Visit Done': 'Registered' };
-      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      const ist = (s) => { const v = Date.parse(String(s || '').slice(0, 19) + 'Z'); return Number.isFinite(v) ? new Date(v + 19800000).toISOString() : ''; };
       const rank = (s) => HOT[s] || 4;
       const tasks = [].concat(tasks_roji, tasks_mahuya_das, tasks_sangita, tasks_rima, tasks_tania);
       const RD = day.length ? String(day[0].d).slice(0, 10) : tasks.reduce((m, t) => (t.ActivityDate > m ? t.ActivityDate : m), '');
@@ -739,7 +739,7 @@
       fresh_tat.forEach((r) => { if (!office(r) || lunch(r)) return; addT(r.o || 'Unassigned', r); addT('\u0000Team', r); });
       const tat = (k) => { const t = T[k]; return t && t.n ? { avg_first_call: Math.round((t.s / t.n) * 10) / 10, fastest_call: Math.round(t.mn), slowest_call: Math.round(t.mx) } : { avg_first_call: null, fastest_call: null, slowest_call: null }; };
       // Overnight leads called by 12 noon need each lead's times: worked out only when every lead of the period loaded.
-      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      const ist = (s) => { const v = Date.parse(String(s || '').slice(0, 19) + 'Z'); return Number.isFinite(v) ? new Date(v + 19800000).toISOString() : ''; };
       const total = fresh_all.reduce((s, r) => s + Number(r.n), 0);
       const exact = fresh_leads.length > 0 && fresh_leads.length === total;
       const noon = {};
@@ -774,7 +774,7 @@
     description: 'Office-hours fresh leads (10:00 AM to 6:30 PM) not called within 5 minutes, newest first, with minutes to first call (the latest 2,000 on long periods). Leads that arrived during the owner’s lunch break are left out.',
     inputs: ['fresh_missed_rows'],
     fn: (fresh_missed_rows) => {
-      const ist = (s) => new Date(Date.parse(String(s).slice(0, 19) + 'Z') + 19800000).toISOString();
+      const ist = (s) => { const v = Date.parse(String(s || '').slice(0, 19) + 'Z'); return Number.isFinite(v) ? new Date(v + 19800000).toISOString() : ''; };
       // Lunch breaks (IST): not counted as misses.
       const LUNCH = [[/^(sangita|rima|mahuya das|pallabi)( |$)/i, ['13:00', '13:30']], [/^riya( |$)/i, ['13:30', '14:00']], [/^(roji|tania)( |$)/i, ['14:30', '15:00']]];
       return fresh_missed_rows.filter((l) => { const m = LUNCH.find(([re]) => re.test(String(l.Owner_Name || '').trim())); const hm = ist(l.Enquiry_Date__c).slice(11, 16); return !(m && hm >= m[1][0] && hm < m[1][1]); }).map((l) => {
@@ -810,7 +810,7 @@
     inputs: ['reconnect'],
     fn: (reconnect) => {
       const t = (s) => Date.parse(String(s).slice(0, 19) + 'Z');
-      const ist = (s) => new Date(t(s) + 19800000).toISOString();
+      const ist = (s) => { const v = t(s); return Number.isFinite(v) ? new Date(v + 19800000).toISOString() : ''; };
       const PROJ = (p) => (/TRIVENI MALL/i.test(p) ? 'Triveni Mall' : /TRIVENI/i.test(p) ? 'Triveni' : /SANGAM/i.test(p) ? 'Sangam' : p || '');
       return reconnect.map((r) => {
         const linked = !String(r.lead_id).startsWith('task:');
@@ -824,7 +824,7 @@
           owner: (linked ? r.owner : r.task_owner) || 'Unassigned', mobile: String(r.mobile || '').replace(/\D/g, '').slice(-10), project: PROJ(r.project),
           lead_status: r.lead_status || '', source: r.source || '', requests: Number(r.requests), outcome,
           called_back: outcome === 'Called back' ? 'Yes' : outcome === 'Missed' || outcome === 'Closed, no call' ? 'No' : '',
-          last_call_result: r.last_result || r.last_call_result || '', days_waiting: outcome === 'Missed' ? Math.floor((Date.now() - t(r.last_request)) / 86400000) : null
+          last_call_result: r.last_result || r.last_call_result || '', days_waiting: outcome === 'Missed' && Number.isFinite(t(r.last_request)) ? Math.floor((Date.now() - t(r.last_request)) / 86400000) : null
         };
       }).sort((a, b) => (a.requested_on + a.requested_at < b.requested_on + b.requested_at ? 1 : -1));
     }
