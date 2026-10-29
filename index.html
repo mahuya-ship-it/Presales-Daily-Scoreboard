@@ -109,6 +109,34 @@
   .ps-la-drill[hidden], .ps-pr-drill[hidden], .ps-rp-drill[hidden], .ps-rp-body[hidden] { display: none; }
   .ps-rp-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-chip.plain { background: transparent; color: var(--color-fg); padding-left: 0; }
+  .ps-rs-bar { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: center; }
+  .ps-rs-weeks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ps-rs-weeks button { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--navy); background: transparent; color: var(--navy); }
+  .ps-rs-weeks button[aria-selected="true"] { background: var(--navy); color: #fff; border-color: var(--navy); box-shadow: 0 0 0 2px var(--gold); }
+  .ps-rs-weeks button span { display: block; font-weight: 400; font-size: 10px; opacity: .8; }
+  .ps-rs-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+  .rs { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: var(--cds-font-size-caption); font-weight: 600; white-space: nowrap; }
+  .rs-normal { background: color-mix(in srgb, #0E9C8F 14%, transparent); color: #0b6f66; }
+  .rs-first { background: var(--navy); color: #fff; }
+  .rs-second { background: var(--gold); color: var(--navy-deep); }
+  .rs-half { background: #f6d6a8; color: #7a4a00; }
+  .rs-off { background: color-mix(in srgb, var(--color-fg) 10%, transparent); color: var(--color-fg-muted); }
+  .rs-comp { background: #e4d7fb; color: #5b2bb5; }
+  .rs-leave { background: #fbd5d5; color: #a11a1a; }
+  .rs-absent { background: transparent; color: #c62828; border: 2px solid #c62828; }
+  .rs-extra { background: #d7f0dc; color: #1e6b33; border: 1px dashed #1e6b33; }
+  .rs-tick { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); align-self: center; }
+  .ps-rs-grid td, .ps-rs-grid th { text-align: center; }
+  .ps-rs-grid td:first-child, .ps-rs-grid th:first-child, .ps-rs-grid td:nth-child(2), .ps-rs-grid th:nth-child(2) { text-align: left; }
+  .ps-rs-grid th.today { box-shadow: inset 0 -3px 0 var(--gold); }
+  .ps-rs-grid th.wk { opacity: .85; }
+  .ps-rs-grid .rs { display: block; min-width: 86px; }
+  .ps-rs-grid .rs small { display: block; font-weight: 400; font-size: 10px; opacity: .85; }
+  .ps-rs-alerts:empty { display: none; }
+  .ps-rs-alerts { border-left: 4px solid #c62828; }
+  .ps-rs-alerts.ok { border-left-color: #1e6b33; }
+  .ps-rs-alerts p { margin: 2px 0; }
+  .ps-rs-alerts .bad { color: #c62828; font-weight: 700; }
   .ps-rs-prev, .ps-rs-next, .ps-rs-this { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
   .ps-rs-this { background: var(--navy); color: #fff; }
   .ps-la-save { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--gold); background: var(--gold); color: var(--navy-deep); }
@@ -343,11 +371,15 @@
         <div class="ps-card ps-rp-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="rp-drill-table" data-name="Saved_report_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the number you clicked, as they were when the report was saved.</p><div class="ps-scroll tall"><table class="ps-t" id="rp-drill-table"></table></div></div>
       </section>
       <section class="ps-screen t6" id="roster" role="tabpanel" aria-labelledby="tab-roster" hidden>
-        <div class="ps-sh"><span class="k">Shift roster</span><h2>Presales weekly roster – <span class="ps-rs-week">—</span></h2>
-          <p>Tuesday is the split day: one group works the first half (9:00 AM – 3:30 PM) and the other the second half (12:00 – 6:30 PM), and the groups swap every week. Other days are the normal shift (10:00 AM – 6:30 PM). Group 1: Roji Ganguly, Rudra Dutta Roy, Tania Banerjee, Riya Kundu. Group 2: Mahuya Das, Sangita Biswas, Rima Debnath, Pallabi Majumder.</p></div>
-        <div class="ps-card"><div class="ps-la-bar"><button type="button" class="ps-rs-prev" aria-label="Previous week">‹ Previous week</button><button type="button" class="ps-rs-this">This week</button><button type="button" class="ps-rs-next" aria-label="Next week">Next week ›</button></div><p class="ps-note ps-rs-tue" role="status"></p></div>
-        <div class="ps-card"><h3>Week roster</h3><p class="ps-note">Today’s column is marked ●. Pallabi Majumder’s week off is not set yet.</p><div class="ps-scroll"><table class="ps-t" id="shift-table"></table></div></div>
-        <div class="ps-card"><h3>On duty per day</h3><div class="ps-scroll"><table class="ps-t" id="shift-count-table"></table></div></div>
+        <div class="ps-sh"><span class="k">Shift roster</span><h2>Presales roster – <span class="ps-rs-title">—</span></h2>
+          <p>Planned roster for the month with leaves and comp offs, and, for days already gone, what actually happened (from calls logged in Salesforce). Tuesday is the split day: one group 9:00 AM – 3:30 PM, the other 12:00 – 6:30 PM, swapping every week. Other days 10:00 AM – 6:30 PM. At least 3 executives must be on the floor every day: a comp off or week-off exchange that leaves fewer is flagged as not eligible.</p></div>
+        <div class="ps-card ps-rs-bar"><label>Month<select class="ps-rs-month" aria-label="Month"></select></label><div class="ps-rs-weeks" role="tablist" aria-label="Week"></div></div>
+        <div class="ps-rs-legend"><span class="rs rs-normal">10:00–6:30</span><span class="rs rs-first">Tue first half 9:00–3:30</span><span class="rs rs-second">Tue second half 12:00–6:30</span><span class="rs rs-half">Half day</span><span class="rs rs-off">Week off</span><span class="rs rs-comp">Comp off</span><span class="rs rs-leave">Leave</span><span class="rs rs-absent">Absent (no calls)</span><span class="rs rs-extra">Worked on off day</span><span class="rs-tick">✓ worked (calls logged)</span></div>
+        <div class="ps-card ps-rs-alerts" role="status"></div>
+        <div class="ps-card"><h3 class="ps-rs-grid-h">Roster</h3><div class="ps-scroll"><table class="ps-t ps-rs-grid" id="roster-grid"></table></div></div>
+        <div class="ps-card"><h3>Executives on the floor</h3><p class="ps-note">Presales executives only (manager and auditor not counted). Fewer than 3 is shown in red.</p><div class="ps-scroll"><table class="ps-t" id="roster-floor"></table></div></div>
+        <div class="ps-card"><h3>Leaves, comp offs and changes</h3><div class="ps-scroll"><table class="ps-t" id="roster-events"></table></div></div>
+        <div class="ps-card"><h3>Roster target vs achievement – <span class="ps-rs-month-name">—</span></h3><p class="ps-note">Planned working days from the roster (after leaves, comp offs and week offs) against days actually worked (calls logged). Days still to come are not counted yet.</p><div class="ps-scroll"><table class="ps-t" id="roster-tva"></table></div></div>
       </section>
       <section class="ps-screen t5" id="team" role="tabpanel" aria-labelledby="tab-team" hidden>
         <div class="ps-sh"><span class="k">Team</span><h2>Team, birthdays and work anniversaries</h2><p>Counted from the report date. On a birthday, the EA sends the team member a greeting card and message from you on WhatsApp at 9:05 AM, and tells you the day before.</p></div>
@@ -417,6 +449,8 @@
     p.q_la_projects = 'SELECT Inq_rltn_Project_Society__r.Name p, COUNT(Id) n' + LW + ' GROUP BY Inq_rltn_Project_Society__r.Name';
     p.q_la = 'SELECT Id, Name, LastName, Status, Owner.Name, Previous_Owner__r.Name, Tele_Caller__r.Name, SubSource__r.Name, UTM_Source__c, Primary_Reason__c, Virtual_Number__c, Type_of_Site_Visit__c, Inq_rltn_Project_Society__r.Name, Presales_AI_Assignment__c, mobile_no_converted_format_normal__c, MobilePhone, Inq_pkl_Source__c, Sub_source_Text__c, Last_Activity_Call_Result__c, Enquiry_Grading__c, Enquiry_Date__c, Enquiry_Type__c' + ", (SELECT Subject, Comment__c, CreatedDate, Follow_Up_Date_Time__c FROM Tasks WHERE Subject != 'Call Log' AND Subject != 'Outgoing Call' AND Comment__c != null ORDER BY CreatedDate DESC LIMIT 1)" + LW + " AND Inq_rltn_Project_Society__r.Name = '" + proj.replace(/'/g, "\\'") + "' ORDER BY Id LIMIT 2000";
     // Last calendar month (Salesforce runs on India time, so LAST_MONTH is the IST month), every project: the monthly saved reports.
+    // Shift roster: calls per person per IST day for the roster month (set by the Shift roster tab).
+    p.q_roster_calls = window.psRosterQuery ? window.psRosterQuery((dash.params() && dash.params().roster_month) || to.slice(0, 7)) : '';
     p.q_la_prev = p.q_la.split(' FROM Lead WHERE ')[0] + " FROM Lead WHERE (Enquiry_Type__c IN ('Inbound','Outbound') OR Enquiry_Type__c = null) AND Inq_pkl_Source__c != 'Channel Partner' AND Enquiry_Date__c = LAST_MONTH ORDER BY Id LIMIT 2000";
     p.q_reconnect = "SELECT Id, CreatedDate, WhoId, Owner.Name FROM Task WHERE Subject = 'Reconnect with Customer.' AND CreatedDate >= " + R0 + ' AND CreatedDate < ' + R1 + ' ORDER BY Id LIMIT 2000';
     // Attendance: from the earliest of (From, Monday of the To week, 1st of the To month) to the end of that Sunday, IST.
@@ -433,6 +467,8 @@
   };
   window.psBuildParams = buildParams;
   window.psToday = istToday;
+  window.psRosterQuery = (ym) => { const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)); const start = shift(ym + '-01', -1) + 'T18:30:00Z'; const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10) + 'T18:30:00Z';
+    return "SELECT Owner.Name o, DAY_ONLY(convertTimezone(CreatedDate)) d, COUNT(Id) n FROM Task WHERE Subject IN ('Call Back','Call Log','Follow-Up For Site Visit') AND CallDisposition != null AND CreatedDate >= " + start + ' AND CreatedDate < ' + end + ' GROUP BY Owner.Name, DAY_ONLY(convertTimezone(CreatedDate))'; };
   window.psShift = shift;
   window.psDays = days;
   window.psStart = START;
@@ -1673,54 +1709,151 @@
     table(document.getElementById(pfx + '-result-table'), live ? 'la_by_result' : '', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), R('la_by_result'), opt(none, 'call_result', 'call results'));
   };
 
-  // ===== Shift roster (Mahuya, 29 Oct 2026). Week = Monday to Sunday. =====
+  // ===== Shift roster, month view (Mahuya, 29 Oct 2026). =====
+  // Weekly rules below; leaves / comp offs / week-off exchanges are documents in roster_events (added by Claude when Mahuya informs).
   // Tuesday split: Group 2 took 9:00–3:30 on Tue 27 Oct 2026; the groups swap every week.
   const RS = {
-    anchorTue: '2026-10-27', anchorEarly: 2, offset: 0,
-    normal: '10:00 AM – 6:30 PM', early: '9:00 AM – 3:30 PM', late: '12:00 – 6:30 PM',
+    anchorTue: '2026-10-27', anchorEarly: 2, month: '', week: 0, events: [], minFloor: 3,
+    normal: '10:00–6:30', early: '9:00–3:30', late: '12:00–6:30',
     people: [
-      { name: 'Mahuya Dutta', role: 'Presales Manager', group: 0, off: [2] },
-      { name: 'Roji Ganguly', role: 'Group 1', group: 1, off: [3] },
-      { name: 'Rudra Dutta Roy', role: 'Group 1', group: 1, off: [1] },
-      { name: 'Tania Banerjee', role: 'Group 1', group: 1, off: [1] },
-      { name: 'Riya Kundu', role: 'Group 1', group: 1, off: [1] },
-      { name: 'Mahuya Das', role: 'Group 2', group: 2, off: [3] },
-      { name: 'Sangita Biswas', role: 'Group 2', group: 2, off: [4] },
-      { name: 'Rima Debnath', role: 'Group 2', group: 2, off: [4] },
-      { name: 'Pallabi Majumder', role: 'Group 2', group: 2, off: [] },
-      { name: 'Koyel Biswas', role: 'Calls Auditor', group: 0, off: [7], half: [6] }
+      { name: 'Mahuya Dutta', role: 'Presales Manager', group: 0, off: [2], exec: false },
+      { name: 'Roji Ganguly', role: 'Group 1', group: 1, off: [3], exec: true, re: /^roji( |$)/i },
+      { name: 'Rudra Dutta Roy', role: 'Group 1', group: 1, off: [1], exec: true, re: /^rudra( |$)/i },
+      { name: 'Tania Banerjee', role: 'Group 1', group: 1, off: [1], exec: true, re: /^tania( |$)/i },
+      { name: 'Riya Kundu', role: 'Group 1', group: 1, off: [1], exec: true, re: /^riya( |$)/i },
+      { name: 'Mahuya Das', role: 'Group 2', group: 2, off: [3], exec: true, re: /^mahuya das( |$)/i },
+      { name: 'Sangita Biswas', role: 'Group 2', group: 2, off: [4], exec: true, re: /^sangita( |$)/i },
+      { name: 'Rima Debnath', role: 'Group 2', group: 2, off: [4], exec: true, re: /^rima( |$)/i },
+      { name: 'Pallabi Majumder', role: 'Group 2', group: 2, off: [], exec: true, re: /^pallabi( |$)/i },
+      { name: 'Koyel Biswas', role: 'Calls Auditor', group: 0, off: [7], half: [6], halfTime: '10:00–4:30', exec: false }
     ]
   };
-  const rsMonday = () => { const t = window.psToday(); const dow = (new Date(t + 'T00:00:00Z').getUTCDay() + 6) % 7; return window.psShift(t, -dow + 7 * RS.offset); };
+  const rsDays = (ym) => { const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), n = new Date(Date.UTC(y, m, 0)).getUTCDate(); return Array.from({ length: n }, (_, i) => ym + '-' + String(i + 1).padStart(2, '0')); };
+  const rsDow = (d) => (new Date(d + 'T00:00:00Z').getUTCDay() + 6) % 7 + 1; // Mon 1 … Sun 7
+  const rsEarly = (d) => { const tue = window.psShift(d, 2 - rsDow(d)); const w = Math.round((Date.parse(tue) - Date.parse(RS.anchorTue)) / (7 * 86400000)); return ((w % 2) + 2) % 2 === 0 ? RS.anchorEarly : 3 - RS.anchorEarly; };
+  const rsWeeks = (days) => [[1, 7], [8, 14], [15, 21], [22, days.length]].map(([a, b], i) => ({ n: i + 1, days: days.slice(a - 1, b) }));
+  const rsFmt = (d, o) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', Object.assign({ timeZone: 'UTC' }, o));
+  // Planned status of a person on a day: {k: class, t: text, work: bool, note}
+  const rsPlan = (p, d) => {
+    const ev = RS.events.filter((e) => e.person === p.name);
+    const moved = ev.find((e) => e.kind === 'weekoff_moved' && e.from === d);
+    const on = ev.find((e) => e.date === d && e.kind !== 'weekoff_moved');
+    const movedTo = ev.find((e) => e.kind === 'weekoff_moved' && e.to === d);
+    if (on && on.kind === 'leave') return { k: 'leave', t: 'Leave', work: false, note: on.note || '' };
+    if (on && on.kind === 'compoff') return { k: 'comp', t: 'Comp off', work: false, note: on.against ? 'against ' + on.against : (on.note || '') };
+    if (on && on.kind === 'absent') return { k: 'absent', t: 'Absent', work: false, note: on.note || '' };
+    if (movedTo) return { k: 'off', t: 'Week off', work: false, note: 'moved from ' + rsFmt(movedTo.from, { weekday: 'short', day: 'numeric', month: 'short' }) };
+    const dw = rsDow(d);
+    if (p.off.indexOf(dw) >= 0 && !moved) return { k: 'off', t: 'Week off', work: false, note: '' };
+    const extra = moved ? 'week off moved to ' + rsFmt(moved.to, { weekday: 'short', day: 'numeric' }) : '';
+    if (p.half && p.half.indexOf(dw) >= 0) return { k: 'half', t: 'Half day', work: true, note: p.halfTime || '' };
+    if (dw === 2 && p.group) return p.group === rsEarly(d) ? { k: 'first', t: RS.early, work: true, note: extra || 'first half' } : { k: 'second', t: RS.late, work: true, note: extra || 'second half' };
+    return { k: 'normal', t: RS.normal, work: true, note: extra };
+  };
+  const rsActual = () => {
+    const rows = okRows('roster_calls');
+    if (!rows) return null;
+    const m = {};
+    rows.forEach((r) => { const p = RS.people.find((x) => x.re && x.re.test(String(r.o || ''))); if (p) m[p.name + '|' + String(r.d).slice(0, 10)] = (m[p.name + '|' + String(r.d).slice(0, 10)] || 0) + Number(r.n || 0); });
+    return m;
+  };
+  const rsFloor = (d, without) => RS.people.filter((p) => p.exec && p.name !== without && rsPlan(p, d).work).length;
+  dbP.then((db) => {
+    if (!db) return;
+    db.collection('roster_events').onSnapshot((snap) => { RS.events = snap.docs.map((x) => Object.assign({ id: x.id }, x.data())); draw(); }, () => {});
+  });
   const drawRoster = () => {
-    const mon = rsMonday(), today = window.psToday();
-    const days = [1, 2, 3, 4, 5, 6, 7].map((i) => window.psShift(mon, i - 1));
-    const weeks = Math.round((Date.parse(days[1]) - Date.parse(RS.anchorTue)) / (7 * 86400000));
-    const early = ((weeks % 2) + 2) % 2 === 0 ? RS.anchorEarly : 3 - RS.anchorEarly;
-    const fmtD = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-    document.querySelector('.ps-rs-week').textContent = 'week of ' + fmtD(days[0]) + ' – ' + fmtD(days[6]);
-    document.querySelector('.ps-rs-tue').textContent = 'Tuesday ' + fmtD(days[1]) + ': Group ' + early + ' first half (' + RS.early + '), Group ' + (3 - early) + ' second half (' + RS.late + ').';
-    const cell = (p, i) => {
-      const dn = i + 1;
-      if (p.off.indexOf(dn) >= 0) return 'Week off';
-      if (p.half && p.half.indexOf(dn) >= 0) return 'Half day';
-      if (dn === 2 && p.group) return p.group === early ? 'First half · ' + RS.early : 'Second half · ' + RS.late;
-      return RS.normal;
-    };
-    const rows = RS.people.map((p) => { const r = { name: p.name, role: p.role }; days.forEach((d, i) => { r['d' + (i + 1)] = cell(p, i); }); return r; });
-    const kind = (v) => (v === 'Week off' ? 'bad' : v === 'Half day' ? 'warn' : /^First/.test(v) ? 'good' : /^Second/.test(v) ? 'muted' : '');
-    const cols = [{ f: 'name', label: 'Team member', cls: 'l' }, { f: 'role', label: 'Group / role', cls: 'l' }].concat(days.map((d, i) => ({ f: 'd' + (i + 1), label: fmtD(d) + (d === today ? ' ●' : ''), cls: 'l', chip: (v) => kind(v) || 'plain' })));
-    table(document.getElementById('shift-table'), '', cols, rows, { key: 'name', pin: () => false });
-    const cnt = days.map((d, i) => {
-      const vals = rows.map((r) => r['d' + (i + 1)]);
-      return { key: d, day: fmtD(d), on_duty: vals.filter((v) => v !== 'Week off').length, first_half: vals.filter((v) => /^First/.test(v)).length, second_half: vals.filter((v) => /^Second/.test(v)).length, week_off: vals.filter((v) => v === 'Week off').length,
-        off_names: rows.filter((r) => r['d' + (i + 1)] === 'Week off').map((r) => r.name).join(', ') };
+    const today = window.psToday();
+    if (!RS.month) RS.month = today.slice(0, 7);
+    if ((dash.params().roster_month || '') !== RS.month) { dash.setParams({ roster_month: RS.month, q_roster_calls: window.psRosterQuery(RS.month) }); }
+    const days = rsDays(RS.month), weeks = rsWeeks(days);
+    const sel = document.querySelector('.ps-rs-month');
+    if (sel && document.activeElement !== sel) {
+      const opts = [];
+      for (let i = -3; i <= 3; i++) { const dt = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1 + i, 1)); opts.push(dt.toISOString().slice(0, 7)); }
+      sel.replaceChildren(...opts.map((ym) => new Option(rsFmt(ym + '-01', { month: 'long', year: 'numeric' }), ym)));
+      sel.value = RS.month;
+    }
+    const wb = document.querySelector('.ps-rs-weeks');
+    wb.replaceChildren(...[{ n: 0, label: 'Full month', sub: rsFmt(days[0], { day: 'numeric' }) + '–' + rsFmt(days[days.length - 1], { day: 'numeric', month: 'short' }) }].concat(weeks.map((w) => ({ n: w.n, label: 'Week ' + w.n, sub: rsFmt(w.days[0], { day: 'numeric' }) + '–' + rsFmt(w.days[w.days.length - 1], { day: 'numeric', month: 'short' }) })))
+      .map((w) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.week = w.n; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(RS.week === w.n)); b.textContent = w.label; const s = document.createElement('span'); s.textContent = w.sub; b.appendChild(s); return b; }));
+    const shown = RS.week ? weeks[RS.week - 1].days : days;
+    const mName = rsFmt(RS.month + '-01', { month: 'long', year: 'numeric' });
+    document.querySelector('.ps-rs-title').textContent = mName + (RS.week ? ' · Week ' + RS.week : '');
+    document.querySelector('.ps-rs-month-name').textContent = mName;
+    document.querySelector('.ps-rs-grid-h').textContent = RS.week ? 'Week ' + RS.week + ' (' + rsFmt(shown[0], { day: 'numeric', month: 'short' }) + ' – ' + rsFmt(shown[shown.length - 1], { day: 'numeric', month: 'short' }) + ')' : 'Full month';
+    const act = rsActual();
+    // Grid (custom cells so each day can carry colour, note and the actual).
+    const g = document.getElementById('roster-grid');
+    g.replaceChildren();
+    const hr = g.createTHead().insertRow();
+    const th = (t, cls) => { const x = document.createElement('th'); x.textContent = t; if (cls) x.className = cls; hr.appendChild(x); return x; };
+    th('Team member'); th('Group / role');
+    shown.forEach((d) => { const x = th(rsFmt(d, { weekday: 'short' }) + ' ' + rsFmt(d, { day: 'numeric' }), (d === today ? 'today' : '') + (rsDow(d) >= 6 ? ' wk' : '')); x.title = rsFmt(d, { weekday: 'long', day: 'numeric', month: 'long' }); });
+    const tb = g.createTBody();
+    RS.people.forEach((p) => {
+      const tr = tb.insertRow();
+      tr.insertCell().textContent = p.name;
+      tr.insertCell().textContent = p.role;
+      shown.forEach((d) => {
+        const pl = rsPlan(p, d), td = tr.insertCell(), s = document.createElement('span');
+        let k = pl.k, t = pl.t, note = pl.note;
+        const n = act && p.exec && d < today ? act[p.name + '|' + d] || 0 : null;
+        if (n !== null) {
+          if (pl.work && n === 0 && k !== 'absent') { k = 'absent'; t = 'Absent'; note = 'no calls logged'; }
+          else if (!pl.work && n > 0) { k = 'extra'; t = 'Worked'; note = 'planned ' + pl.t.toLowerCase() + ', ' + n + ' calls'; }
+          else if (pl.work && n > 0) t += ' ✓';
+        }
+        s.className = 'rs rs-' + k; s.textContent = t;
+        if (note) { const sm = document.createElement('small'); sm.textContent = note; s.appendChild(sm); }
+        s.title = p.name + ' · ' + rsFmt(d, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + t + (note ? ' (' + note + ')' : '') + (n !== null ? ' · ' + n + ' calls' : '');
+        td.appendChild(s);
+      });
     });
-    table(document.getElementById('shift-count-table'), '', [{ f: 'day', label: 'Day', cls: 'l', sortVal: (v, r) => r.key }, { f: 'on_duty', label: 'On duty', fmt: (v) => fmtN(v) }, { f: 'first_half', label: 'First half', fmt: (v) => fmtN(v) }, { f: 'second_half', label: 'Second half', fmt: (v) => fmtN(v) }, { f: 'week_off', label: 'Week off', fmt: (v) => fmtN(v) }, { f: 'off_names', label: 'Who is off', cls: 'l' }], cnt, { key: 'key', pin: () => false });
+    addExport(g);
+    // Floor count.
+    const fl = shown.map((d) => { const off = RS.people.filter((p) => p.exec && !rsPlan(p, d).work).map((p) => p.name); const c = rsFloor(d); return { key: d, day: rsFmt(d, { weekday: 'short', day: 'numeric', month: 'short' }), floor: c, off: off.join(', ') || '—', first: RS.people.filter((p) => rsPlan(p, d).k === 'first').length, second: RS.people.filter((p) => rsPlan(p, d).k === 'second').length }; });
+    table(document.getElementById('roster-floor'), '', [{ f: 'day', label: 'Day', cls: 'l', sortVal: (v, r) => r.key }, { f: 'floor', label: 'Executives on floor', fmt: (v) => fmtN(v), chip: (v) => (v < RS.minFloor ? 'bad' : 'good') }, { f: 'first', label: 'Tue first half', fmt: (v) => (v ? fmtN(v) : '—') }, { f: 'second', label: 'Tue second half', fmt: (v) => (v ? fmtN(v) : '—') }, { f: 'off', label: 'Executives off / on leave', cls: 'l' }], fl, { key: 'key', pin: () => false });
+    // Events and eligibility (a comp off or week-off exchange needs at least 3 executives left on the floor).
+    const evs = RS.events.filter((e) => String(e.date || e.to || '').slice(0, 7) === RS.month || String(e.from || '').slice(0, 7) === RS.month).sort((a, b) => String(a.date || a.to).localeCompare(String(b.date || b.to)));
+    const evRows = evs.map((e) => {
+      const d = e.kind === 'weekoff_moved' ? e.to : e.date;
+      const floor = rsFloor(d);
+      const ok = e.kind === 'absent' || floor >= RS.minFloor;
+      const what = e.kind === 'leave' ? 'Leave' : e.kind === 'compoff' ? 'Comp off' : e.kind === 'absent' ? 'Absent' : 'Week off moved';
+      return { key: e.id, date: rsFmt(d, { weekday: 'short', day: 'numeric', month: 'short' }), sortd: d, person: e.person, what, detail: e.kind === 'weekoff_moved' ? 'from ' + rsFmt(e.from, { weekday: 'short', day: 'numeric', month: 'short' }) + ' to ' + rsFmt(e.to, { weekday: 'short', day: 'numeric', month: 'short' }) : (e.against ? 'against ' + e.against : '') + (e.note ? (e.against ? ' · ' : '') + e.note : ''), floor, eligible: e.kind === 'absent' ? 'Unplanned' : ok ? 'Eligible' : 'Not eligible', status: d < today ? 'Taken' : 'Planned' };
+    });
+    table(document.getElementById('roster-events'), '', [{ f: 'date', label: 'Date', cls: 'l', sortVal: (v, r) => r.sortd }, { f: 'person', label: 'Team member', cls: 'l' }, { f: 'what', label: 'Type', cls: 'l', chip: (v) => (v === 'Leave' || v === 'Absent' ? 'bad' : v === 'Comp off' ? 'warn' : 'muted') }, { f: 'detail', label: 'Details', cls: 'l' }, { f: 'floor', label: 'Executives on floor that day', fmt: (v) => fmtN(v) }, { f: 'eligible', label: 'Min. 3 rule', cls: 'l', chip: (v) => (v === 'Eligible' ? 'good' : v === 'Not eligible' ? 'bad' : 'muted') }, { f: 'status', label: 'Status', cls: 'l' }], evRows, { key: 'key', empty: 'No leaves or comp offs recorded for this month.', pin: () => false });
+    // Alerts.
+    const al = document.querySelector('.ps-rs-alerts');
+    al.replaceChildren();
+    const lows = fl.filter((r) => r.floor < RS.minFloor), bads = evRows.filter((r) => r.eligible === 'Not eligible');
+    const line = (t, cls) => { const p = document.createElement('p'); p.textContent = t; if (cls) p.className = cls; al.appendChild(p); };
+    bads.forEach((r) => line('⚠ ' + r.person + ' – ' + r.what.toLowerCase() + ' on ' + r.date + ': only ' + r.floor + ' executives would be on the floor (minimum ' + RS.minFloor + '). Not eligible on that day.', 'bad'));
+    lows.forEach((r) => line('⚠ ' + r.day + ': only ' + r.floor + ' executives on the floor (minimum ' + RS.minFloor + ').', 'bad'));
+    al.classList.toggle('ok', !lows.length && !bads.length);
+    if (!lows.length && !bads.length) line('✓ Every day ' + (RS.week ? 'this week' : 'this month') + ' has at least ' + RS.minFloor + ' executives on the floor' + (evRows.length ? ', and every leave or comp off is eligible.' : '.'));
+    // Target vs achievement for the month (executives).
+    const tva = RS.people.filter((p) => p.exec).map((p) => {
+      let planned = 0, plannedToDate = 0, worked = 0, absent = 0, extra = 0, leave = 0, comp = 0, offs = 0;
+      days.forEach((d) => {
+        const pl = rsPlan(p, d);
+        if (pl.k === 'leave') leave += 1; else if (pl.k === 'comp') comp += 1; else if (pl.k === 'off') offs += 1;
+        if (pl.work) planned += 1;
+        if (d < today) { const n = act ? act[p.name + '|' + d] || 0 : 0; if (pl.work) { plannedToDate += 1; if (n > 0) worked += 1; else absent += 1; } else if (n > 0) extra += 1; }
+      });
+      return { key: p.name, name: p.name, group: p.role, planned, to_date: plannedToDate, worked, absent, extra, leave, comp, offs, pct: plannedToDate ? worked / plannedToDate : null };
+    });
+    table(document.getElementById('roster-tva'), '', [{ f: 'name', label: 'Executive', cls: 'l' }, { f: 'group', label: 'Group', cls: 'l' }, { f: 'planned', label: 'Planned days (month)', fmt: (v) => fmtN(v) }, { f: 'to_date', label: 'Planned so far', fmt: (v) => fmtN(v) }, { f: 'worked', label: 'Worked', fmt: (v) => fmtN(v) }, { f: 'absent', label: 'Unplanned absent', fmt: (v) => fmtN(v), chip: (v) => (v > 0 ? 'bad' : 'good') }, { f: 'extra', label: 'Worked on off day', fmt: (v) => fmtN(v) }, { f: 'leave', label: 'Leaves', fmt: (v) => fmtN(v) }, { f: 'comp', label: 'Comp offs', fmt: (v) => fmtN(v) }, { f: 'offs', label: 'Week offs', fmt: (v) => fmtN(v) }, { f: 'pct', label: 'Achievement', fmt: (v) => (v === null ? '—' : fmtP(v)), chip: (v) => (v === null ? 'muted' : v >= 0.95 ? 'good' : v >= 0.85 ? 'warn' : 'bad') }], act ? tva : null, { key: 'key', empty: 'Loading calls from Salesforce…', pin: () => false });
   };
   document.addEventListener('click', (ev) => {
-    if (ev.target.closest('.ps-rs-prev')) RS.offset -= 1; else if (ev.target.closest('.ps-rs-next')) RS.offset += 1; else if (ev.target.closest('.ps-rs-this')) RS.offset = 0; else return;
-    drawRoster();
+    const b = ev.target.closest('.ps-rs-weeks button');
+    if (!b) return;
+    RS.week = Number(b.dataset.week); drawRoster();
+  });
+  document.addEventListener('change', (ev) => {
+    if (!ev.target.closest('.ps-rs-month')) return;
+    RS.month = ev.target.value; RS.week = 0; drawRoster();
   });
 
   function draw() {
