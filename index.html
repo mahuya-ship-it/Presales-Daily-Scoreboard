@@ -576,6 +576,17 @@
   };
   dash.loader('la_leads', LA_LOADER);
   dash.loader('la_prev', LA_LOADER);
+  // Shift roster: Salesforce's grouped answer (owner, IST day, calls) as rows.
+  dash.loader('roster_calls', {
+    description: 'Calls per owner per IST day from Salesforce as rows (o, d, n)',
+    fn: ({ answer }) => {
+      let a = answer;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 300)); } }
+      if (Array.isArray(a) && a.length && a[0] && a[0].errorCode) throw new Error(a.map((y) => y.message).join(' '));
+      if (!a || !Array.isArray(a.records)) throw new Error('Salesforce answered without records' + (a && a.message ? ': ' + a.message : ''));
+      return { columns: ['o', 'd', 'n'], rows: a.records.map((r) => ({ o: (r.o !== undefined ? r.o : r.Owner && r.Owner.Name) || '', d: String(r.d || '').slice(0, 10), n: Number(r.n) || 0 })) };
+    }
+  });
 
   // Reconnect requests: every page of the period's tasks, then each lead (400 at a time) with its latest logged call.
   dash.loader('reconnect', {
@@ -1765,7 +1776,8 @@
   const drawRoster = () => {
     const today = window.psToday();
     if (!RS.month) RS.month = today.slice(0, 7);
-    if ((dash.params().roster_month || '') !== RS.month) { dash.setParams({ roster_month: RS.month, q_roster_calls: window.psRosterQuery(RS.month) }); }
+    const rq = window.psRosterQuery(RS.month);
+    if ((dash.params().roster_month || '') !== RS.month || dash.params().q_roster_calls !== rq) { dash.setParams({ roster_month: RS.month, q_roster_calls: rq }); }
     const days = rsDays(RS.month), weeks = rsWeeks(days);
     const sel = document.querySelector('.ps-rs-month');
     if (sel && document.activeElement !== sel) {
