@@ -1803,6 +1803,8 @@
     th('Team member'); th('Group / role');
     shown.forEach((d) => { const x = th(rsFmt(d, { weekday: 'short' }) + ' ' + rsFmt(d, { day: 'numeric' }), (d === today ? 'today' : '') + (rsDow(d) >= 6 ? ' wk' : '')); x.title = rsFmt(d, { weekday: 'long', day: 'numeric', month: 'long' }); });
     const tb = g.createTBody();
+    const absences = [];
+    const tracked = (p) => !!act && Object.keys(act).some((k) => k.indexOf(p.name + '|') === 0);
     RS.people.forEach((p) => {
       const tr = tb.insertRow();
       tr.insertCell().textContent = p.name;
@@ -1810,9 +1812,10 @@
       shown.forEach((d) => {
         const pl = rsPlan(p, d), td = tr.insertCell(), s = document.createElement('span');
         let k = pl.k, t = pl.t, note = pl.note;
-        const n = act && p.exec && d < today ? act[p.name + '|' + d] || 0 : null;
+        const n = act && p.exec && d < today && tracked(p) ? act[p.name + '|' + d] || 0 : null;
+        if (act && p.exec && d < today && !tracked(p) && pl.work) note = (note ? note + ' · ' : '') + 'no call data this month';
         if (n !== null) {
-          if (pl.work && n === 0 && k !== 'absent') { k = 'absent'; t = 'Absent'; note = 'no calls logged'; }
+          if (pl.work && n === 0 && k !== 'absent') { k = 'absent'; t = 'Absent'; note = 'no calls logged'; absences.push({ p: p.name, d, planned: pl.t }); }
           else if (!pl.work && n > 0) { k = 'extra'; t = 'Worked'; note = 'planned ' + pl.t.toLowerCase() + ', ' + n + ' calls'; }
           else if (pl.work && n > 0) t += ' ✓';
         }
@@ -1841,10 +1844,13 @@
     al.replaceChildren();
     const lows = fl.filter((r) => r.floor < RS.minFloor), bads = evRows.filter((r) => r.eligible === 'Not eligible');
     const line = (t, cls) => { const p = document.createElement('p'); p.textContent = t; if (cls) p.className = cls; al.appendChild(p); };
+    // Mahuya (29 Oct 2026): anyone due on the floor with no calls logged is absent, e.g. an unannounced or shifted comp off.
+    if (act === null) line('Attendance is still loading from Salesforce…');
+    absences.forEach((a) => line('✗ Absent: ' + a.p + ' on ' + rsFmt(a.d, { weekday: 'short', day: 'numeric', month: 'short' }) + ' – was due on the floor (' + a.planned + ') but logged no calls, and no leave or comp off is recorded.', 'bad'));
     bads.forEach((r) => line('⚠ ' + r.person + ' – ' + r.what.toLowerCase() + ' on ' + r.date + ': only ' + r.floor + ' executives would be on the floor (minimum ' + RS.minFloor + '). Not eligible on that day.', 'bad'));
     lows.forEach((r) => line('⚠ ' + r.day + ': only ' + r.floor + ' executives on the floor (minimum ' + RS.minFloor + ').', 'bad'));
-    al.classList.toggle('ok', !lows.length && !bads.length);
-    if (!lows.length && !bads.length) line('✓ Every day ' + (RS.week ? 'this week' : 'this month') + ' has at least ' + RS.minFloor + ' executives on the floor' + (evRows.length ? ', and every leave or comp off is eligible.' : '.'));
+    al.classList.toggle('ok', !lows.length && !bads.length && !absences.length);
+    if (!lows.length && !bads.length && !absences.length && act !== null) line('✓ Every day ' + (RS.week ? 'this week' : 'this month') + ' has at least ' + RS.minFloor + ' executives on the floor, nobody due on the floor was absent' + (evRows.length ? ', and every leave or comp off is eligible.' : '.'));
     // Target vs achievement for the month (executives).
     const tva = RS.people.filter((p) => p.exec).map((p) => {
       let planned = 0, plannedToDate = 0, worked = 0, absent = 0, extra = 0, leave = 0, comp = 0, offs = 0;
@@ -1852,9 +1858,10 @@
         const pl = rsPlan(p, d);
         if (pl.k === 'leave') leave += 1; else if (pl.k === 'comp') comp += 1; else if (pl.k === 'off') offs += 1;
         if (pl.work) planned += 1;
-        if (d < today) { const n = act ? act[p.name + '|' + d] || 0 : 0; if (pl.work) { plannedToDate += 1; if (n > 0) worked += 1; else absent += 1; } else if (n > 0) extra += 1; }
+        if (d < today && act && Object.keys(act).some((k) => k.indexOf(p.name + '|') === 0)) { const n = act[p.name + '|' + d] || 0; if (pl.work) { plannedToDate += 1; if (n > 0) worked += 1; else absent += 1; } else if (n > 0) extra += 1; }
       });
-      return { key: p.name, name: p.name, group: p.role, planned, to_date: plannedToDate, worked, absent, extra, leave, comp, offs, pct: plannedToDate ? worked / plannedToDate : null };
+      const trk = !!act && Object.keys(act).some((k) => k.indexOf(p.name + '|') === 0);
+      return { key: p.name, name: p.name + (trk ? '' : ' (no call data)'), group: p.role, planned, to_date: plannedToDate, worked, absent, extra, leave, comp, offs, pct: plannedToDate ? worked / plannedToDate : null };
     });
     table(document.getElementById('roster-tva'), '', [{ f: 'name', label: 'Executive', cls: 'l' }, { f: 'group', label: 'Group', cls: 'l' }, { f: 'planned', label: 'Planned days (month)', fmt: (v) => fmtN(v) }, { f: 'to_date', label: 'Planned so far', fmt: (v) => fmtN(v) }, { f: 'worked', label: 'Worked', fmt: (v) => fmtN(v) }, { f: 'absent', label: 'Unplanned absent', fmt: (v) => fmtN(v), chip: (v) => (v > 0 ? 'bad' : 'good') }, { f: 'extra', label: 'Worked on off day', fmt: (v) => fmtN(v) }, { f: 'leave', label: 'Leaves', fmt: (v) => fmtN(v) }, { f: 'comp', label: 'Comp offs', fmt: (v) => fmtN(v) }, { f: 'offs', label: 'Week offs', fmt: (v) => fmtN(v) }, { f: 'pct', label: 'Achievement', fmt: (v) => (v === null ? '—' : fmtP(v)), chip: (v) => (v === null ? 'muted' : v >= 0.95 ? 'good' : v >= 0.85 ? 'warn' : 'bad') }], act ? tva : null, { key: 'key', empty: 'Loading calls from Salesforce…', pin: () => false });
   };
