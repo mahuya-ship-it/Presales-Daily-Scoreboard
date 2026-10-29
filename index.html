@@ -108,6 +108,9 @@
   .ps-la-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
   .ps-la-drill[hidden], .ps-pr-drill[hidden], .ps-rp-drill[hidden], .ps-rp-body[hidden] { display: none; }
   .ps-rp-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
+  .ps-chip.plain { background: transparent; color: var(--color-fg); padding-left: 0; }
+  .ps-rs-prev, .ps-rs-next, .ps-rs-this { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--navy); background: transparent; color: var(--navy); }
+  .ps-rs-this { background: var(--navy); color: #fff; }
   .ps-la-save { font: inherit; font-size: var(--cds-font-size-caption); font-weight: 700; cursor: pointer; padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1px solid var(--gold); background: var(--gold); color: var(--navy-deep); }
   .ps-la-save:disabled { opacity: .6; cursor: default; }
   .ps-pr-drill { scroll-margin-top: 12px; border: 2px solid var(--gold); }
@@ -210,6 +213,10 @@
       <button type="button" class="ps-tab t6" role="tab" id="tab-reports" data-screen="reports" aria-selected="false">
         <span class="n">▤</span><span class="t">Saved reports</span>
         <span class="m">Frozen monthly lead analysis</span>
+      </button>
+      <button type="button" class="ps-tab t6" role="tab" id="tab-roster" data-screen="roster" aria-selected="false">
+        <span class="n">◷</span><span class="t">Shift roster</span>
+        <span class="m">Weekly presales shifts and week offs</span>
       </button>
       <button type="button" class="ps-tab t5" role="tab" id="tab-team" data-screen="team" aria-selected="false">
         <span class="n">♥</span><span class="t">Team &amp; birthdays</span>
@@ -334,6 +341,13 @@
         <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Sub-source vs call result</h3><button type="button" class="ps-tbl-export" data-table="rp-subresult-table" data-name="Saved_report_subsource_vs_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="rp-subresult-table"></table></div></div>
         <div class="ps-card ps-rp-body"><div class="ps-card-h"><h3>Call result vs lead status</h3><button type="button" class="ps-tbl-export" data-table="rp-result-table" data-name="Saved_report_by_call_result">⤓ Export</button></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><div class="ps-scroll tall"><table class="ps-t" id="rp-result-table"></table></div></div>
         <div class="ps-card ps-rp-drill" hidden><div class="ps-card-h"><h3 class="ps-drill-h">Leads</h3><span><button type="button" class="ps-tbl-export" data-table="rp-drill-table" data-name="Saved_report_lead_list">⤓ Export</button> <button type="button" class="ps-drill-close">Close</button></span></div><p class="ps-tbl-msg ps-note" role="status" hidden></p><p class="ps-note">The leads behind the number you clicked, as they were when the report was saved.</p><div class="ps-scroll tall"><table class="ps-t" id="rp-drill-table"></table></div></div>
+      </section>
+      <section class="ps-screen t6" id="roster" role="tabpanel" aria-labelledby="tab-roster" hidden>
+        <div class="ps-sh"><span class="k">Shift roster</span><h2>Presales weekly roster – <span class="ps-rs-week">—</span></h2>
+          <p>Tuesday is the split day: one group works the first half (9:00 AM – 3:30 PM) and the other the second half (12:00 – 6:30 PM), and the groups swap every week. Other days are the normal shift (10:00 AM – 6:30 PM). Group 1: Roji Ganguly, Rudra Dutta Roy, Tania Banerjee, Riya Kundu. Group 2: Mahuya Das, Sangita Biswas, Rima Debnath, Pallabi Majumder.</p></div>
+        <div class="ps-card"><div class="ps-la-bar"><button type="button" class="ps-rs-prev" aria-label="Previous week">‹ Previous week</button><button type="button" class="ps-rs-this">This week</button><button type="button" class="ps-rs-next" aria-label="Next week">Next week ›</button></div><p class="ps-note ps-rs-tue" role="status"></p></div>
+        <div class="ps-card"><h3>Week roster</h3><p class="ps-note">Today’s column is marked ●. Pallabi Majumder’s week off is not set yet.</p><div class="ps-scroll"><table class="ps-t" id="shift-table"></table></div></div>
+        <div class="ps-card"><h3>On duty per day</h3><div class="ps-scroll"><table class="ps-t" id="shift-count-table"></table></div></div>
       </section>
       <section class="ps-screen t5" id="team" role="tabpanel" aria-labelledby="tab-team" hidden>
         <div class="ps-sh"><span class="k">Team</span><h2>Team, birthdays and work anniversaries</h2><p>Counted from the report date. On a birthday, the EA sends the team member a greeting card and message from you on WhatsApp at 9:05 AM, and tells you the day before.</p></div>
@@ -1199,7 +1213,7 @@
   const fail = (el) => { el.replaceChildren(); const p = document.createElement('div'); p.className = 'ps-fail'; p.textContent = 'Failed to load'; el.appendChild(p); };
 
   // Task menu: one screen at a time.
-  const SCREENS = ['overview', 'task1', 'task2', 'task3', 'task4', 'la', 'reports', 'team'];
+  const SCREENS = ['overview', 'task1', 'task2', 'task3', 'task4', 'la', 'reports', 'roster', 'team'];
   let current = SCREENS.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'overview';
   const show = (id) => {
     current = id;
@@ -1659,6 +1673,56 @@
     table(document.getElementById(pfx + '-result-table'), live ? 'la_by_result' : '', [{ f: 'call_result', label: 'Call result', cls: 'l' }].concat(STC('la_by_result')), R('la_by_result'), opt(none, 'call_result', 'call results'));
   };
 
+  // ===== Shift roster (Mahuya, 29 Oct 2026). Week = Monday to Sunday. =====
+  // Tuesday split: Group 2 took 9:00–3:30 on Tue 27 Oct 2026; the groups swap every week.
+  const RS = {
+    anchorTue: '2026-10-27', anchorEarly: 2, offset: 0,
+    normal: '10:00 AM – 6:30 PM', early: '9:00 AM – 3:30 PM', late: '12:00 – 6:30 PM',
+    people: [
+      { name: 'Mahuya Dutta', role: 'Presales Manager', group: 0, off: [2] },
+      { name: 'Roji Ganguly', role: 'Group 1', group: 1, off: [3] },
+      { name: 'Rudra Dutta Roy', role: 'Group 1', group: 1, off: [1] },
+      { name: 'Tania Banerjee', role: 'Group 1', group: 1, off: [1] },
+      { name: 'Riya Kundu', role: 'Group 1', group: 1, off: [1] },
+      { name: 'Mahuya Das', role: 'Group 2', group: 2, off: [3] },
+      { name: 'Sangita Biswas', role: 'Group 2', group: 2, off: [4] },
+      { name: 'Rima Debnath', role: 'Group 2', group: 2, off: [4] },
+      { name: 'Pallabi Majumder', role: 'Group 2', group: 2, off: [] },
+      { name: 'Koyel Biswas', role: 'Calls Auditor', group: 0, off: [7], half: [6] }
+    ]
+  };
+  const rsMonday = () => { const t = window.psToday(); const dow = (new Date(t + 'T00:00:00Z').getUTCDay() + 6) % 7; return window.psShift(t, -dow + 7 * RS.offset); };
+  const drawRoster = () => {
+    const mon = rsMonday(), today = window.psToday();
+    const days = [1, 2, 3, 4, 5, 6, 7].map((i) => window.psShift(mon, i - 1));
+    const weeks = Math.round((Date.parse(days[1]) - Date.parse(RS.anchorTue)) / (7 * 86400000));
+    const early = ((weeks % 2) + 2) % 2 === 0 ? RS.anchorEarly : 3 - RS.anchorEarly;
+    const fmtD = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    document.querySelector('.ps-rs-week').textContent = 'week of ' + fmtD(days[0]) + ' – ' + fmtD(days[6]);
+    document.querySelector('.ps-rs-tue').textContent = 'Tuesday ' + fmtD(days[1]) + ': Group ' + early + ' first half (' + RS.early + '), Group ' + (3 - early) + ' second half (' + RS.late + ').';
+    const cell = (p, i) => {
+      const dn = i + 1;
+      if (p.off.indexOf(dn) >= 0) return 'Week off';
+      if (p.half && p.half.indexOf(dn) >= 0) return 'Half day';
+      if (dn === 2 && p.group) return p.group === early ? 'First half · ' + RS.early : 'Second half · ' + RS.late;
+      return RS.normal;
+    };
+    const rows = RS.people.map((p) => { const r = { name: p.name, role: p.role }; days.forEach((d, i) => { r['d' + (i + 1)] = cell(p, i); }); return r; });
+    const kind = (v) => (v === 'Week off' ? 'bad' : v === 'Half day' ? 'warn' : /^First/.test(v) ? 'good' : /^Second/.test(v) ? 'muted' : '');
+    const cols = [{ f: 'name', label: 'Team member', cls: 'l' }, { f: 'role', label: 'Group / role', cls: 'l' }].concat(days.map((d, i) => ({ f: 'd' + (i + 1), label: fmtD(d) + (d === today ? ' ●' : ''), cls: 'l', chip: (v) => kind(v) || 'plain' })));
+    table(document.getElementById('shift-table'), '', cols, rows, { key: 'name', pin: () => false });
+    const cnt = days.map((d, i) => {
+      const vals = rows.map((r) => r['d' + (i + 1)]);
+      return { key: d, day: fmtD(d), on_duty: vals.filter((v) => v !== 'Week off').length, first_half: vals.filter((v) => /^First/.test(v)).length, second_half: vals.filter((v) => /^Second/.test(v)).length, week_off: vals.filter((v) => v === 'Week off').length,
+        off_names: rows.filter((r) => r['d' + (i + 1)] === 'Week off').map((r) => r.name).join(', ') };
+    });
+    table(document.getElementById('shift-count-table'), '', [{ f: 'day', label: 'Day', cls: 'l', sortVal: (v, r) => r.key }, { f: 'on_duty', label: 'On duty', fmt: (v) => fmtN(v) }, { f: 'first_half', label: 'First half', fmt: (v) => fmtN(v) }, { f: 'second_half', label: 'Second half', fmt: (v) => fmtN(v) }, { f: 'week_off', label: 'Week off', fmt: (v) => fmtN(v) }, { f: 'off_names', label: 'Who is off', cls: 'l' }], cnt, { key: 'key', pin: () => false });
+  };
+  document.addEventListener('click', (ev) => {
+    if (ev.target.closest('.ps-rs-prev')) RS.offset -= 1; else if (ev.target.closest('.ps-rs-next')) RS.offset += 1; else if (ev.target.closest('.ps-rs-this')) RS.offset = 0; else return;
+    drawRoster();
+  });
+
   function draw() {
     const D = dash.params().date || '';
     const { from: F, to: T } = cur();
@@ -1778,6 +1842,8 @@
     if (current === 'reports') {
       drawReports();
     }
+
+    if (current === 'roster') drawRoster();
 
     if (current === 'task3') {
       const pr = okRows('priority_by_exec');
